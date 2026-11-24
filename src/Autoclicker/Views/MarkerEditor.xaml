@@ -1,0 +1,67 @@
+<Window x:Class="Autoclicker.Views.MarkerEditor"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Editar punto"
+        SizeToContent="WidthAndHeight" Left="-32000" Top="-32000"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False"
+        FontFamily="{StaticResource UiFont}" FontSize="13"
+        Foreground="{DynamicResource TextPrimaryBrush}">
+
+    <Border Margin="14" Padding="16,14,16,16" Width="336" CornerRadius="10" BorderThickness="1"
+            Background="{DynamicResource ToolTipBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="20" ShadowDepth="3" Opacity="0.3" Color="Black" />
+        </Border.Effect>
+
+        <StackPanel>
+            <!-- Cabecera: nombre + orden + borrar -->
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,-4,-8,0">
+                    <Button Content="&#xE76B;" ToolTip="Mover antes" Width="32" Height="30" Margin="0"
+                            Style="{StaticResource TitleBarButtonStyle}" Click="Earlier_Click" />
+                    <Button Content="&#xE76C;" ToolTip="Mover después" Width="32" Height="30" Margin="0"
+                            Style="{StaticResource TitleBarButtonStyle}" Click="Later_Click" />
+                    <Button Content="&#xE74D;" ToolTip="Eliminar punto" Width="32" Height="30" Margin="0" FontSize="13"
+                            Style="{StaticResource TitleBarCloseButtonStyle}" Click="Delete_Click" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock x:Name="TitleText" Text="Punto 1" FontFamily="{StaticResource DisplayFont}"
+                               FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock x:Name="CoordsText" Text="X 0 · Y 0" Margin="0,1,0,0" Style="{StaticResource CaptionStyle}" />
+                </StackPanel>
+            </DockPanel>
+
+            <TextBlock Text="Botón" Margin="0,14,0,6" Style="{StaticResource CaptionStyle}" />
+            <Border Style="{StaticResource SegmentedContainerStyle}">
+                <UniformGrid Columns="4">
+                    <RadioButton x:Name="ButtonGeneral" Content="General" GroupName="PtButton" Style="{StaticResource CompactSegmentStyle}"
+                                 ToolTip="El botón elegido en la ventana principal" />
+                    <RadioButton x:Name="ButtonLeft" Content="Izq." GroupName="PtButton" Style="{StaticResource CompactSegmentStyle}" />
+                    <RadioButton x:Name="ButtonRight" Content="Der." GroupName="PtButton" Style="{StaticResource CompactSegmentStyle}" />
+                    <RadioButton x:Name="ButtonMiddle" Content="Central" GroupName="PtButton" Style="{StaticResource CompactSegmentStyle}" />
+                </UniformGrid>
+            </Border>
+
+            <TextBlock Text="Tipo" Margin="0,12,0,6" Style="{StaticResource CaptionStyle}" />
+            <Border Style="{StaticResource SegmentedContainerStyle}">
+                <UniformGrid Columns="4">
+                    <RadioButton x:Name="KindGeneral" Content="General" GroupName="PtKind" Style="{StaticResource CompactSegmentStyle}"
+                                 ToolTip="El tipo elegido en la ventana principal" />
+                    <RadioButton x:Name="KindSingle" Content="Simple" GroupName="PtKind" Style="{StaticResource CompactSegmentStyle}" />
+                    <RadioButton x:Name="KindDouble" Content="Doble" GroupName="PtKind" Style="{StaticResource CompactSegmentStyle}" />
+                    <RadioButton x:Name="KindHold" Content="Mantener" GroupName="PtKind" Style="{StaticResource CompactSegmentStyle}" />
+                </UniformGrid>
+            </Border>
+
+            <DockPanel Margin="0,14,0,0">
+                <TextBlock DockPanel.Dock="Right" Text="ms" Style="{StaticResource UnitStyle}" />
+                <TextBox x:Name="DelayBox" DockPanel.Dock="Right" MaxLength="7" Style="{StaticResource SmallFieldStyle}" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Espera hasta el siguiente" Style="{StaticResource RowTitleStyle}" />
+                    <TextBlock Text="Vacío = intervalo general" Style="{StaticResource RowHintStyle}" />
+                </StackPanel>
+            </DockPanel>
+        </StackPanel>
+    </Border>
+</Window>

@@ -1,0 +1,27 @@
+<Window x:Class="Autoclicker.Views.MarkerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Punto"
+        Width="48" Height="48" Left="-32000" Top="-32000"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False" ShowActivated="False"
+        FontFamily="{StaticResource UiFont}">
+
+    <!-- El centro exacto de la ventana es el punto donde se clica. -->
+    <Grid x:Name="Root" Cursor="SizeAll" ToolTip="Arrastra para mover · Clic para editar">
+        <Ellipse Width="34" Height="34" StrokeThickness="2.5"
+                 Fill="{DynamicResource AccentSoftBrush}" Stroke="{DynamicResource AccentBrush}">
+            <Ellipse.Effect>
+                <DropShadowEffect BlurRadius="8" ShadowDepth="0" Opacity="0.45" Color="Black" />
+            </Ellipse.Effect>
+        </Ellipse>
+        <Ellipse Width="5" Height="5" Fill="{DynamicResource AccentBrush}" IsHitTestVisible="False" />
+
+        <Border Width="19" Height="19" CornerRadius="10" HorizontalAlignment="Right" VerticalAlignment="Top"
+                BorderThickness="1.5" Background="{DynamicResource AccentBrush}" BorderBrush="{DynamicResource OnAccentBrush}">
+            <TextBlock x:Name="NumberText" Text="1" FontSize="10" FontWeight="Bold"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="{DynamicResource OnAccentBrush}" />
+        </Border>
+    </Grid>
+</Window>

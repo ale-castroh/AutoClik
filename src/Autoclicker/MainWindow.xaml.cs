@@ -1,0 +1,670 @@
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Threading;
+using Autoclicker.Engine;
+using Autoclicker.Input;
+using Autoclicker.Interop;
+using Autoclicker.Markers;
+using Autoclicker.Theme;
+using Autoclicker.Views;
+using static Autoclicker.Interop.NativeMethods;
+
+namespace Autoclicker;
+
+public partial class MainWindow : Window
+{
+    private readonly ClickEngine _engine = new();
+    private readonly DispatcherTimer _statusTimer;
+    private readonly Queue<(long Time, long Count)> _rateSamples = new();
+    private readonly MarkerManager _markers = new();
+    private string? _notice; // aviso puntual en el estado (p. ej. "Añade al menos un punto")
+
+    private HotkeyManager? _hotkeys;
+    private TrayIcon? _tray;
+    private nint _hwnd;
+
+    private bool _themeRefreshQueued;
+    private bool _capturingHotkey;
+    private bool _exiting;
+    private string? _hotkeyError;
+    private long _runStarted;
+    private TimeSpan _runDelay;
+    private StopReason? _lastStop;
+
+    public MainWindow()
+    {
+        InitializeComponent();
+        ThemeManager.ThemeChanged += OnThemeChanged;
+
+        _engine.Stopped += reason => Dispatcher.BeginInvoke(() => OnEngineStopped(reason));
+        _markers.Changed += UpdatePointsSummary;
+
+        // La UI se refresca 10 veces por segundo, no en cada clic: no frena al motor.
+        _statusTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(100) };
+        int ticks = 0;
+        _statusTimer.Tick += (_, _) =>
+        {
+            UpdateStatus();
+            // Una vez por segundo, que los marcadores sigan visibles aunque otra ventana
+            // "siempre visible" se haya puesto encima (son traspasables, no molestan).
+            if (++ticks % 10 == 0 && _markers.Visible) _markers.BringToFront();
+        };
+
+        foreach (TextBox box in NumberBoxes())
+        {
+            box.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(char.IsAsciiDigit);
+            DataObject.AddPastingHandler(box, OnNumberPaste);
+            box.GotKeyboardFocus += (_, _) => box.SelectAll();
+            box.LostKeyboardFocus += (_, _) => { if (box.Text.Length == 0) box.Text = "0"; };
+        }
+
+        EmergencyCornerWatcher.Triggered += OnEmergencyCorner;
+        InitPersistence();
+    }
+
+    private IEnumerable<TextBox> NumberBoxes() =>
+    [
+        IntervalBox, HoldBox, RepeatCountBox, DurationBox, XBox, YBox, OffsetBox, JitterBox, DelayBox,
+    ];
+
+    // ================= Páginas (principal / ajustes) =================
+
+    private void SettingsButton_Changed(object sender, RoutedEventArgs e) => ShowSettings(SettingsButton.IsChecked == true);
+
+    private void ShowSettings(bool show)
+    {
+        if (SettingsButton.IsChecked != show) SettingsButton.IsChecked = show; // vuelve a entrar por el evento
+        if (_capturingHotkey) EndHotkeyCapture(null);
+
+        FrameworkElement incoming = show ? SettingsPage : MainPage;
+        FrameworkElement outgoing = show ? MainPage : SettingsPage;
+        if (incoming.Visibility == Visibility.Visible) return;
+
+        outgoing.Visibility = Visibility.Collapsed;
+        incoming.Visibility = Visibility.Visible;
+
+        // Entrada suave: fundido + desplazamiento corto desde el lado del que viene.
+        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut };
+        var duration = TimeSpan.FromMilliseconds(180);
+        incoming.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease });
+        ((System.Windows.Media.TranslateTransform)incoming.RenderTransform).BeginAnimation(
+            System.Windows.Media.TranslateTransform.XProperty,
+            new System.Windows.Media.Animation.DoubleAnimation(show ? 18 : -18, 0, duration) { EasingFunction = ease });
+    }
+
+    private void SetOptionsEnabled(bool enabled)
+    {
+        OptionsCard.IsEnabled = enabled;
+        HotkeyCard.IsEnabled = enabled;
+        ClicksCard.IsEnabled = enabled;
+    }
+
+    // ================= Ciclo de vida de la ventana =================
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        _hwnd = new WindowInteropHelper(this).Handle;
+        WindowBackdrop.Attach(this);
+        HwndSource.FromHwnd(_hwnd)!.AddHook(WndProc);
+
+        _hotkeys = new HotkeyManager(_hwnd);
+        _hotkeys.Pressed += OnHotkeyPressed;
+        _hotkeys.Released += OnHotkeyReleased;
+        var savedHotkey = new Hotkey(_data.Prefs.HotkeyVk, _data.Prefs.HotkeyModifiers);
+        if (!_hotkeys.TrySet(savedHotkey))
+            _hotkeyError = $"{savedHotkey} lo usa otra aplicación: elige otro";
+
+        _tray = new TrayIcon(_hwnd);
+        _tray.LeftClick += ToggleWindowFromTray;
+        _tray.RightClick += ShowTrayMenu;
+
+        UpdateIcons();
+        RefreshHotkeyUi();
+        UpdateStatus();
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        if (!_exiting && CloseToTraySwitch.IsChecked == true)
+        {
+            e.Cancel = true;
+            HideToTray();
+            return;
+        }
+        SaveNow();
+        base.OnClosing(e);
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        if (_recording) ClickRecorder.Stop();
+        _recordingBar?.Close();
+        _engine.Dispose();
+        EmergencyCornerWatcher.Stop();
+        EmergencyCornerWatcher.Triggered -= OnEmergencyCorner;
+        _markers.Changed -= UpdatePointsSummary;
+        _markers.Clear();
+        _hotkeys?.Dispose();
+        _tray?.Dispose();
+        ThemeManager.ThemeChanged -= OnThemeChanged;
+        base.OnClosed(e);
+        Application.Current.Shutdown();
+    }
+
+    protected override void OnStateChanged(EventArgs e)
+    {
+        base.OnStateChanged(e);
+        // Minimizado desde la barra de tareas (Win+D, clic en el icono...).
+        if (WindowState == WindowState.Minimized && MinimizeToTraySwitch.IsChecked == true)
+            HideToTray();
+    }
+
+    protected override void OnDeactivated(EventArgs e)
+    {
+        base.OnDeactivated(e);
+        if (_capturingHotkey) EndHotkeyCapture(null);
+    }
+
+    private nint WndProc(nint hwnd, int msg, nint wParam, nint lParam, ref bool handled)
+    {
+        if (msg == WM_HOTKEY && wParam == EscHotkeyId)
+        {
+            StopRecording();
+            handled = true;
+            return 0;
+        }
+
+        if (_hotkeys?.HandleMessage(msg, wParam) == true || _tray?.HandleMessage(msg, lParam) == true)
+        {
+            handled = true;
+            return 0;
+        }
+
+        // Windows avisa al cambiar el modo claro/oscuro ("ImmersiveColorSet") o el color de acento.
+        if (msg == WM_DWMCOLORIZATIONCOLORCHANGED ||
+            (msg == WM_SETTINGCHANGE && lParam != 0 && Marshal.PtrToStringUni(lParam) == "ImmersiveColorSet"))
+        {
+            QueueThemeRefresh();
+        }
+        return 0;
+    }
+
+    /// <summary>Windows envía varios mensajes seguidos; se agrupan en una sola actualización.</summary>
+    private void QueueThemeRefresh()
+    {
+        if (_themeRefreshQueued) return;
+        _themeRefreshQueued = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+        {
+            _themeRefreshQueued = false;
+            ThemeManager.Apply();
+        });
+    }
+
+    private void OnThemeChanged()
+    {
+        WindowBackdrop.ApplyTheme(this);
+        UpdateIcons();
+    }
+
+    private void UpdateIcons()
+    {
+        bool running = StartButton.IsChecked == true;
+        Icon = IconFactory.Render(64, ThemeManager.Accent, active: false);
+        _tray?.Update(ThemeManager.Accent, running, running ? "Autoclicker · Clicando" : "Autoclicker · Detenido");
+    }
+
+    // ================= Barra de título y bandeja =================
+
+    private void Minimize_Click(object sender, RoutedEventArgs e)
+    {
+        if (MinimizeToTraySwitch.IsChecked == true) HideToTray();
+        else WindowState = WindowState.Minimized;
+    }
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void HideToTray()
+    {
+        Hide();
+        WindowState = WindowState.Normal; // al volver, que aparezca normal
+
+        // En la bandeja la app apenas hace nada: devolver al sistema la memoria que no usa.
+        // Si está clicando no se toca nada para no meter pausas en el motor.
+        if (StartButton.IsChecked != true && !_recording)
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, TrimMemory);
+    }
+
+    private static void TrimMemory()
+    {
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+        GC.WaitForPendingFinalizers();
+        SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, -1, -1);
+    }
+
+    private void ShowFromTray()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+    }
+
+    private void ToggleWindowFromTray()
+    {
+        if (IsVisible) HideToTray();
+        else ShowFromTray();
+    }
+
+    private void ShowTrayMenu()
+    {
+        var menu = (ContextMenu)FindResource("TrayMenu");
+        var startItem = (MenuItem)menu.Items[0];
+        bool running = StartButton.IsChecked == true;
+        startItem.Header = running ? "Detener" : "Iniciar";
+        startItem.Icon = running ? "" : "";
+
+        menu.Placement = PlacementMode.MousePoint;
+        menu.IsOpen = true;
+        // Sin esto el menú no se cierra al hacer clic fuera.
+        if (PresentationSource.FromVisual(menu) is HwndSource source) SetForegroundWindow(source.Handle);
+    }
+
+    private void TrayStart_Click(object sender, RoutedEventArgs e) => StartButton.IsChecked = StartButton.IsChecked != true;
+
+    private void TrayShow_Click(object sender, RoutedEventArgs e) => ShowFromTray();
+
+    private void TrayExit_Click(object sender, RoutedEventArgs e)
+    {
+        _exiting = true;
+        Close();
+    }
+
+    // ================= Motor =================
+
+    private void StartButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_capturingHotkey) EndHotkeyCapture(null);
+        _notice = null;
+
+        if (_recording)
+        {
+            Dispatcher.BeginInvoke(() => StartButton.IsChecked = false);
+            return;
+        }
+
+        if (PointsPositionRadio.IsChecked == true && _markers.Count == 0)
+        {
+            _notice = "Añade al menos un punto";
+            Dispatcher.BeginInvoke(() => StartButton.IsChecked = false);
+            return;
+        }
+
+        ClickSettings settings = ReadSettings();
+        _markers.ClickThrough = settings.Points != null;
+        _runStarted = Stopwatch.GetTimestamp();
+        _runDelay = settings.StartDelay;
+        _lastStop = null;
+        _rateSamples.Clear();
+
+        _engine.Start(settings);
+        if (EmergencySwitch.IsChecked == true) EmergencyCornerWatcher.Start();
+        SetOptionsEnabled(false);
+        _statusTimer.Start();
+        UpdateStatus();
+        UpdateIcons();
+    }
+
+    private void StartButton_Unchecked(object sender, RoutedEventArgs e)
+    {
+        _engine.Stop();
+        EmergencyCornerWatcher.Stop();
+        _markers.ClickThrough = false;
+        _lastStop ??= StopReason.Requested;
+        SetOptionsEnabled(true);
+        _statusTimer.Stop();
+        UpdateStatus();
+        UpdateIcons();
+    }
+
+    /// <summary>Parada de emergencia: el usuario llevó el ratón a una esquina.</summary>
+    private void OnEmergencyCorner()
+    {
+        if (StartButton.IsChecked != true) return;
+        StartButton.IsChecked = false;
+        _notice = "Parado: ratón en la esquina";
+        UpdateStatus();
+    }
+
+    /// <summary>El motor terminó por sí solo (nº de clics o tiempo alcanzado, o error).</summary>
+    private void OnEngineStopped(StopReason reason)
+    {
+        if (StartButton.IsChecked != true) return;
+        _lastStop = reason;
+        StartButton.IsChecked = false;
+    }
+
+    private ClickSettings ReadSettings()
+    {
+        long unitMs = UnitHRadio.IsChecked == true ? 3_600_000
+                    : UnitMinRadio.IsChecked == true ? 60_000
+                    : UnitSRadio.IsChecked == true ? 1_000
+                    : 1;
+        long intervalMs = Number(IntervalBox) * unitMs;
+
+        return new ClickSettings
+        {
+            Interval = TimeSpan.FromMilliseconds(Math.Max(intervalMs, 1)),
+            JitterPercent = Math.Min(Number(JitterBox), 90),
+            Button = RightButtonRadio.IsChecked == true ? MouseButtonKind.Right
+                   : MiddleButtonRadio.IsChecked == true ? MouseButtonKind.Middle
+                   : MouseButtonKind.Left,
+            Kind = DoubleKindRadio.IsChecked == true ? ClickKind.Double
+                 : HoldKindRadio.IsChecked == true ? ClickKind.Hold
+                 : ClickKind.Single,
+            HoldDuration = TimeSpan.FromMilliseconds(Math.Max(Number(HoldBox), 1)),
+            RepeatCount = RepeatCountRadio.IsChecked == true ? (int)Math.Clamp(Number(RepeatCountBox), 1, int.MaxValue) : 0,
+            TimeLimit = RepeatTimeRadio.IsChecked == true ? TimeSpan.FromSeconds(Math.Max(Number(DurationBox), 1)) : TimeSpan.Zero,
+            StartDelay = TimeSpan.FromSeconds(Number(DelayBox)),
+            UseFixedPosition = FixedPositionRadio.IsChecked == true,
+            Points = PointsPositionRadio.IsChecked == true ? _markers.Snapshot() : null,
+            Speed = PointsPositionRadio.IsChecked == true ? SelectedSpeed : 1,
+            X = (int)Number(XBox),
+            Y = (int)Number(YBox),
+            RandomOffsetPx = (int)Number(OffsetBox),
+            LockToForegroundWindow = LockWindowSwitch.IsChecked == true,
+        };
+    }
+
+    private void UpdateStatus()
+    {
+        long now = Stopwatch.GetTimestamp();
+        long count = _engine.ClickCount;
+        bool running = StartButton.IsChecked == true;
+
+        // Clics por segundo reales, medidos sobre el último segundo.
+        double rate = 0;
+        if (running)
+        {
+            _rateSamples.Enqueue((now, count));
+            while (_rateSamples.Count > 1 && Stopwatch.GetElapsedTime(_rateSamples.Peek().Time, now).TotalSeconds > 1.0)
+                _rateSamples.Dequeue();
+            var oldest = _rateSamples.Peek();
+            double span = Stopwatch.GetElapsedTime(oldest.Time, now).TotalSeconds;
+            if (span > 0.2) rate = (count - oldest.Count) / span;
+        }
+
+        CountText.Text = count.ToString("N0");
+        RateText.Text = $"{(count == 1 ? "clic" : "clics")} · {rate:0.0}/s";
+
+        double waitLeft = (_runDelay - Stopwatch.GetElapsedTime(_runStarted, now)).TotalSeconds;
+        StatusText.Text = running
+            ? waitLeft > 0 ? $"Empieza en {waitLeft:0.0} s"
+              : _engine.IsWaitingForWindow ? "Cambia a la ventana de destino"
+              : _engine.IsPaused ? "En pausa · otra ventana activa"
+              : "Clicando"
+            : _notice ?? _lastStop switch
+            {
+                StopReason.Completed => "Completado",
+                StopReason.Error => "Error al clicar",
+                _ => "Detenido",
+            };
+
+        string key = _hotkeys?.Current.ToString() ?? "F6";
+        HotkeyHintText.Text = HoldModeRadio.IsChecked == true
+            ? $"Mantén {key} para clicar"
+            : $"{key} para {(running ? "detener" : "iniciar")}";
+    }
+
+    // ================= Atajo =================
+
+    private void OnHotkeyPressed()
+    {
+        if (_recording)
+        {
+            StopRecording();
+            return;
+        }
+        if (HoldModeRadio.IsChecked == true) StartButton.IsChecked = true;
+        else StartButton.IsChecked = StartButton.IsChecked != true;
+    }
+
+    private void OnHotkeyReleased()
+    {
+        if (HoldModeRadio.IsChecked == true) StartButton.IsChecked = false;
+    }
+
+    // Checked/Unchecked (y no Click) para que funcione igual con ratón, teclado o lectores de pantalla.
+    private void HotkeyButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!_capturingHotkey) BeginHotkeyCapture();
+    }
+
+    private void HotkeyButton_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (_capturingHotkey) EndHotkeyCapture(null);
+    }
+
+    private void BeginHotkeyCapture()
+    {
+        _capturingHotkey = true;
+        if (_hotkeys != null) _hotkeys.Suspended = true; // que el atajo actual no salte mientras eliges
+        HotkeyButton.IsChecked = true;
+        HotkeyButton.Content = "Pulsa una tecla…";
+        HotkeyNoteText.Text = "Tecla, combinación o botón lateral del ratón · Esc cancela";
+    }
+
+    private void EndHotkeyCapture(Hotkey? chosen)
+    {
+        if (_hotkeys == null) return;
+        _capturingHotkey = false;
+        HotkeyButton.IsChecked = false;
+        _hotkeys.Suspended = false;
+
+        if (chosen is { } hotkey && hotkey != _hotkeys.Current)
+        {
+            Hotkey previous = _hotkeys.Current;
+            if (_hotkeys.TrySet(hotkey))
+            {
+                _hotkeyError = null;
+            }
+            else
+            {
+                _hotkeys.TrySet(previous);
+                _hotkeyError = $"{hotkey} lo usa otra aplicación";
+            }
+        }
+        RefreshHotkeyUi();
+        UpdateStatus();
+        ScheduleSave();
+    }
+
+    private void RefreshHotkeyUi()
+    {
+        HotkeyButton.Content = _hotkeys?.Current.ToString() ?? "F6";
+        HotkeyNoteText.Text = _hotkeyError ?? "Funciona aunque la ventana esté oculta";
+        HotkeyNoteText.Foreground = (System.Windows.Media.Brush)FindResource(_hotkeyError != null ? "AccentBrush" : "TextSecondaryBrush");
+    }
+
+    protected override void OnPreviewKeyDown(KeyEventArgs e)
+    {
+        if (!_capturingHotkey)
+        {
+            if (e.Key == Key.Escape && SettingsPage.IsVisible)
+            {
+                e.Handled = true;
+                ShowSettings(false);
+                return;
+            }
+            base.OnPreviewKeyDown(e);
+            return;
+        }
+
+        e.Handled = true;
+        Key key = e.Key == Key.System ? e.SystemKey : e.Key;
+
+        if (key == Key.Escape)
+        {
+            EndHotkeyCapture(null);
+            return;
+        }
+
+        // Solo modificadores: esperar a la tecla principal.
+        if (key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift
+            or Key.RightShift or Key.LWin or Key.RWin or Key.None or Key.ImeProcessed or Key.DeadCharProcessed)
+            return;
+
+        ModifierKeys mods = Keyboard.Modifiers;
+        uint modifiers = 0;
+        if (mods.HasFlag(ModifierKeys.Control)) modifiers |= MOD_CONTROL;
+        if (mods.HasFlag(ModifierKeys.Alt)) modifiers |= MOD_ALT;
+        if (mods.HasFlag(ModifierKeys.Shift)) modifiers |= MOD_SHIFT;
+        if (mods.HasFlag(ModifierKeys.Windows)) modifiers |= MOD_WIN;
+
+        EndHotkeyCapture(new Hotkey(KeyInterop.VirtualKeyFromKey(key), modifiers));
+    }
+
+    protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
+    {
+        if (_capturingHotkey && e.ChangedButton is MouseButton.XButton1 or MouseButton.XButton2)
+        {
+            e.Handled = true;
+            EndHotkeyCapture(new Hotkey(e.ChangedButton == MouseButton.XButton1 ? VK_XBUTTON1 : VK_XBUTTON2, 0));
+            return;
+        }
+        base.OnPreviewMouseDown(e);
+    }
+
+    // ================= Posición =================
+
+    private void PickPosition_Click(object sender, RoutedEventArgs e)
+    {
+        // Se oculta la ventana para poder elegir un punto que esté debajo de ella.
+        Hide();
+        var point = PositionPicker.Pick(null);
+        ShowFromTray();
+
+        if (point is { } p)
+        {
+            XBox.Text = p.X.ToString();
+            YBox.Text = p.Y.ToString();
+        }
+    }
+
+    // ================= Multi-punto =================
+
+    private void PointsMode_Changed(object sender, RoutedEventArgs e)
+    {
+        bool on = PointsPositionRadio.IsChecked == true;
+        _markers.Visible = on;
+        RepeatUnitText.Text = on ? "vueltas" : "clics";
+        UpdatePointsSummary();
+    }
+
+    private void AddPoints_Click(object sender, RoutedEventArgs e)
+    {
+        // Se oculta la ventana para poder marcar puntos que estén debajo de ella.
+        Hide();
+        PositionPicker.PickMany((x, y) => _markers.Add(x, y));
+        ShowFromTray();
+        _markers.BringToFront();
+    }
+
+    private void ClearPoints_Click(object sender, RoutedEventArgs e) => _markers.Clear();
+
+    // ================= Grabadora =================
+
+    private const int EscHotkeyId = 2;
+    private const int VK_ESCAPE = 0x1B;
+    private bool _recording;
+    private RecordingBar? _recordingBar;
+
+    private void RecordPoints_Click(object sender, RoutedEventArgs e) => StartRecording();
+
+    private void StartRecording()
+    {
+        if (_recording) return;
+        StartButton.IsChecked = false;
+        _recording = true;
+
+        Hide();
+        _markers.Visible = false;
+
+        // Esc termina la grabación (solo mientras se graba; luego se libera).
+        bool escOk = RegisterHotKey(_hwnd, EscHotkeyId, MOD_NOREPEAT, VK_ESCAPE) != 0;
+        string key = _hotkeys?.Current.ToString() ?? "F6";
+
+        ClickRecorder.ClickRecorded += OnClickRecorded;
+        ClickRecorder.Start();
+
+        _recordingBar = new RecordingBar(escOk ? $"Esc o {key}" : key);
+        _recordingBar.StopRequested += StopRecording;
+        _recordingBar.Show();
+    }
+
+    private void OnClickRecorded() => _recordingBar?.SetCount(ClickRecorder.Count);
+
+    private void StopRecording()
+    {
+        if (!_recording) return;
+        _recording = false;
+
+        List<MarkerPoint> points = ClickRecorder.Stop();
+        ClickRecorder.ClickRecorded -= OnClickRecorded;
+        UnregisterHotKey(_hwnd, EscHotkeyId);
+        _recordingBar?.Close();
+        _recordingBar = null;
+
+        if (points.Count > 0)
+        {
+            _markers.Load(points);
+            Speed1Radio.IsChecked = true;
+            PointsPositionRadio.IsChecked = true;
+        }
+        PointsMode_Changed(this, new RoutedEventArgs()); // vuelve a mostrar los marcadores si toca
+        if (points.Count > 0) _notice = $"Grabados {points.Count} {(points.Count == 1 ? "clic" : "clics")}";
+
+        ShowFromTray();
+        _markers.BringToFront();
+        UpdateStatus();
+    }
+
+    private double SelectedSpeed =>
+        SpeedHalfRadio.IsChecked == true ? 0.5
+        : Speed2Radio.IsChecked == true ? 2
+        : Speed4Radio.IsChecked == true ? 4
+        : 1;
+
+    private void UpdatePointsSummary()
+    {
+        int n = _markers.Count;
+        PointsSummaryText.Text = n switch
+        {
+            0 => "Sin puntos",
+            1 => "1 punto",
+            _ => $"{n} puntos",
+        };
+        ClearPointsButton.IsEnabled = n > 0;
+        if (n > 0 && _notice != null && StartButton.IsChecked != true)
+        {
+            _notice = null;
+            UpdateStatus();
+        }
+    }
+
+    // ================= Campos numéricos =================
+
+    private static long Number(TextBox box) => long.TryParse(box.Text, out long v) ? v : 0;
+
+    private static void OnNumberPaste(object sender, DataObjectPastingEventArgs e)
+    {
+        if (e.DataObject.GetData(DataFormats.UnicodeText) is not string text || !text.All(char.IsAsciiDigit))
+            e.CancelCommand();
+    }
+}

@@ -1,0 +1,25 @@
+<Window x:Class="Autoclicker.Views.PositionPicker"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Elegir posición"
+        WindowStyle="None" AllowsTransparency="True" ResizeMode="NoResize"
+        Background="#59000000" Topmost="True" ShowInTaskbar="False"
+        Cursor="Cross" FontFamily="{StaticResource UiFont}" FontSize="13"
+        Foreground="{DynamicResource TextPrimaryBrush}">
+
+    <Canvas x:Name="Root">
+        <!-- Cruz que sigue al cursor -->
+        <Rectangle x:Name="HLine" Height="1" Fill="{DynamicResource AccentBrush}" Opacity="0.8" IsHitTestVisible="False" />
+        <Rectangle x:Name="VLine" Width="1" Fill="{DynamicResource AccentBrush}" Opacity="0.8" IsHitTestVisible="False" />
+
+        <!-- Etiqueta con coordenadas -->
+        <Border x:Name="Label" Padding="12,8" CornerRadius="8" BorderThickness="1" IsHitTestVisible="False"
+                Background="{DynamicResource ToolTipBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}">
+            <StackPanel>
+                <TextBlock x:Name="Coords" FontFamily="{StaticResource DisplayFont}" FontSize="15" FontWeight="SemiBold" />
+                <TextBlock x:Name="HintText" Text="Clic para elegir · Esc para cancelar" Margin="0,2,0,0" FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+        </Border>
+    </Canvas>
+</Window>
