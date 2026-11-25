@@ -26,6 +26,9 @@ public partial class MainWindow
     private string? _macroNotice;     // aviso puntual ("Terminado", "Nada grabado"...)
     private RecordingBar? _macroBar;
     private DispatcherTimer? _macroTimer;
+    private MacroEditor? _editor;     // editor abierto (2.3); la ventana principal queda desactivada
+    private Macro? _testMacro;        // "Probar" del editor: se reproduce esta copia sin guardar, una vez
+    private Macro? _playing;          // lo que se está reproduciendo (con posiciones ya desplazadas)
 
     private bool MacroActive => _macroRecording || _player.IsPlaying;
 
@@ -70,7 +73,7 @@ public partial class MainWindow
     /// <summary>Atajo de una macro: la reproduce; si ya se está reproduciendo esa, la para.</summary>
     private void OnMacroHotkey(Macro macro)
     {
-        if (_macroRecording || _recording) return;
+        if (_macroRecording || _recording || EditorBlocks) return;
         if (_player.IsPlaying)
         {
             bool same = macro == _macro;
@@ -164,11 +167,19 @@ public partial class MainWindow
     private void PlayMacro_Checked(object sender, RoutedEventArgs e)
     {
         if (_macroBusy) return;
-        if (_macro == null || _macro.Events.Count == 0 || _macroRecording || _recording)
+        Macro? source = _testMacro ?? _macro;
+        if (source == null || source.Events.Count == 0 || _macroRecording || _recording)
         {
-            if (_macro == null) _macroNotice = Strings.T("MacroNoneHint");
-            SetChecked(PlayMacroButton, false);
-            UpdateMacroUi();
+            if (source == null) _macroNotice = Strings.T("MacroNoneHint");
+            CancelPlay();
+            return;
+        }
+        // Posiciones relativas a una ventana (2.3): desplazar según dónde esté ahora
+        _playing = ForPlayback(source);
+        if (_playing == null)
+        {
+            _macroNotice = Strings.F("MacroWindowMissing", source.WindowTitle is { Length: > 0 } t ? t : source.WindowProcess ?? "");
+            CancelPlay();
             return;
         }
 
@@ -176,7 +187,9 @@ public partial class MainWindow
         _macroNotice = null;
         HideForMacro();
         if (EmergencySwitch.IsChecked == true) EmergencyCornerWatcher.Start();
-        _player.Play(_macro, ReadPlayOptions());
+        MacroPlayOptions options = ReadPlayOptions();
+        if (_testMacro != null) options = options with { Repeat = MacroRepeat.Once };
+        _player.Play(_playing, options);
         _macroTimer?.Start();
         MacroOptionsCard.IsEnabled = false;
         RecordMacroButton.IsEnabled = false;
@@ -193,9 +206,80 @@ public partial class MainWindow
         MacroOptionsCard.IsEnabled = true;
         RecordMacroButton.IsEnabled = true;
         _macroNotice ??= Strings.T("Stopped");
+        _playing = null;
         ShowAfterMacro();
+        if (_testMacro != null) EndEditorTest();
         UpdateIcons();
         UpdateMacroUi();
+    }
+
+    /// <summary>No se pudo empezar a reproducir: desmarcar y, si era una prueba del editor, volver a él.</summary>
+    private void CancelPlay()
+    {
+        SetChecked(PlayMacroButton, false);
+        if (_testMacro != null) EndEditorTest();
+        UpdateMacroUi();
+    }
+
+    /// <summary>
+    /// La macro lista para reproducir: tal cual, o con el ratón desplazado lo que se haya movido su
+    /// ventana. Null si sus posiciones son de una ventana que no está abierta.
+    /// </summary>
+    private static Macro? ForPlayback(Macro macro)
+    {
+        if (macro.WindowProcess is not { } process) return macro;
+        nint hwnd = AntiAfk.FindWindow(process);
+        if (hwnd == 0) return null;
+        var origin = new Interop.NativeMethods.POINT();
+        Interop.NativeMethods.ClientToScreen(hwnd, ref origin);
+        return macro.Shifted(origin.X - macro.WindowX, origin.Y - macro.WindowY);
+    }
+
+    // ================= Editor (2.3) =================
+
+    /// <summary>Con el editor abierto, los atajos no reproducen la macro guardada (sí paran la prueba).</summary>
+    private bool EditorBlocks => _editor != null && _testMacro == null;
+
+    private void EditMacro()
+    {
+        if (_macro is not { } macro || _editor != null || MacroActive) return;
+        _macroNotice = null;
+        var editor = new MacroEditor(macro) { Owner = this };
+        editor.TestRequested += test =>
+        {
+            if (MacroActive) return;
+            _testMacro = test;
+            editor.Hide();
+            SetChecked(PlayMacroButton, true, raise: true);
+        };
+        editor.Saved += edited =>
+        {
+            macro.Events = edited.Events;
+            macro.WindowProcess = edited.WindowProcess;
+            macro.WindowTitle = edited.WindowTitle;
+            macro.WindowX = edited.WindowX;
+            macro.WindowY = edited.WindowY;
+            _macroStore.Save(macro);
+            _macroNotice = Strings.T("MacroSaved");
+            UpdateMacroUi();
+        };
+        editor.Closed += (_, _) =>
+        {
+            _editor = null;
+            IsEnabled = true;
+            Activate();
+        };
+        _editor = editor;
+        IsEnabled = false;
+        editor.Show();
+    }
+
+    private void EndEditorTest()
+    {
+        _testMacro = null;
+        if (_editor == null) return;
+        _editor.Show();
+        _editor.Activate();
     }
 
     private void OnPlaybackFinished(bool completed)
@@ -255,13 +339,13 @@ public partial class MainWindow
 
     private void OnRecordHotkey()
     {
-        if (_player.IsPlaying || _recording) return;
+        if (_player.IsPlaying || _recording || _editor != null) return;
         SetChecked(RecordMacroButton, RecordMacroButton.IsChecked != true, raise: true);
     }
 
     private void OnPlayHotkey()
     {
-        if (_macroRecording || _recording) return;
+        if (_macroRecording || _recording || EditorBlocks) return;
         SetChecked(PlayMacroButton, PlayMacroButton.IsChecked != true, raise: true);
     }
 
@@ -285,6 +369,7 @@ public partial class MainWindow
         if (_macros.Count > 0) menu.Items.Add(new Separator());
 
         bool has = _macro != null;
+        menu.Items.Add(MacroAction("MacroEdit", "", EditMacro, has && !MacroActive));
         menu.Items.Add(MacroAction("MacroAssignHotkey", "", AssignMacroHotkey, has));
         menu.Items.Add(MacroAction("MacroRename", "", RenameMacro, has));
         menu.Items.Add(MacroAction("MacroDuplicate", "", DuplicateMacro, has));
@@ -404,9 +489,9 @@ public partial class MainWindow
         MacroNameText.Text = _macro?.Name ?? Strings.T("MacroNone");
         PlayMacroButton.IsEnabled = _macro != null || PlayMacroButton.IsChecked == true;
 
-        if (_player.IsPlaying && _macro != null)
+        if (_player.IsPlaying && (_playing ?? _macro) is { } playing)
         {
-            long duration = Math.Max(1, _macro.DurationMicros);
+            long duration = Math.Max(1, playing.DurationMicros);
             long position = Math.Min(_player.PositionMicros, duration);
             MacroOptions loopInfo = ReadLoopInfo();
             MacroStatusText.Text = loopInfo.Total > 0
@@ -479,6 +564,7 @@ public partial class MainWindow
 
     private void DisposeMacros()
     {
+        _editor?.Close();
         foreach (var (_, manager) in _macroHotkeys) manager.Dispose();
         _macroHotkeys.Clear();
         if (_macroRecording) MacroRecorder.Stop();

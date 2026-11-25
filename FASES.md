@@ -102,6 +102,25 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 2.3.0 — Editor de macros ✅
+- **Editor** (`Views/MacroEditor`, menú de la macro → "Editar…"): ventana propia; la principal queda
+  desactivada mientras está abierto. La macro se ve como **pasos** (`Macros/MacroSteps.cs`): movimientos
+  seguidos, clic, arrastre, pulsar tecla, mantener/soltar tecla o botón, rueda y texto, con la espera antes
+  de cada uno. Ida y vuelta sin pérdidas (eventos → pasos → eventos da lo mismo; probado con 1344 eventos).
+- Editar: borrar (varios a la vez), subir/bajar, deshacer (Ctrl+Z, 100 niveles); espera, tecla, cuánto se
+  mantiene, posición (con "Elegir") y texto del paso elegido. Insertar después del paso elegido: espera (+1 s
+  al siguiente), tecla, texto y clic. Limpiar: acortar esperas de más de X s y quitar movimientos (su tiempo
+  pasa al paso siguiente: la macro dura lo mismo). Probar reproduce una vez la copia sin guardar y vuelve al
+  editor. Cancelar con cambios pide confirmación.
+- **Escribir texto**: evento nuevo `TypeChar` (KEYEVENTF_UNICODE): escribe cualquier carácter sin depender
+  de la distribución del teclado; el salto de línea pulsa Intro.
+- **Posiciones relativas a una ventana**: la macro guarda el proceso y dónde estaba la esquina de su
+  ventana; al reproducir, el ratón se desplaza lo que se haya movido. Si la ventana no está abierta, avisa
+  y no reproduce. Formato de macro compatible: los campos nuevos son opcionales.
+- Pruebas: nueva `tests/ui/macro-editor.ps1` (borrar, deshacer, insertar texto, cambiar posición, Probar,
+  Guardar, reproducir, relativa a la diana y ventana ausente); `clics-reales.ps1` abre el editor y lo usa con
+  el ratón de verdad. La diana del banco registra también el texto escrito.
+
 ## Versión 2.2.0 — Teclas, mini ventana y atajos de macro ✅
 - **Acción** en Clics (antes "Botón"): izquierdo, derecho, central, **rueda** (abajo/arriba, 1-20 pasos) o
   **tecla** (`Engine/KeyInput.cs`: SendInput por código de escaneo; simple, doble o mantenida). La tecla va a

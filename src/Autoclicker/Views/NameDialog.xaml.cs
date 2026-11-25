@@ -42,9 +42,10 @@ public partial class NameDialog : Window
     }
 
     /// <summary>Pide un nombre. <paramref name="validate"/> devuelve un mensaje de error o null si vale.</summary>
-    public static string? AskName(Window owner, string title, string initial, Func<string, string?> validate)
+    public static string? AskName(Window owner, string title, string initial, Func<string, string?> validate, int maxLength = 40)
     {
         var dialog = new NameDialog(title, null, initial, Strings.T("Save"), validate, confirmOnly: false) { Owner = owner };
+        dialog.NameBox.MaxLength = maxLength;
         return dialog.ShowDialog() == true ? dialog.ResultName : null;
     }
 

@@ -31,7 +31,10 @@ static void Target(int seconds)
     };
     // Teclas y rueda (pruebas de macros)
     form.KeyPreview = true;
-    form.KeyDown += (_, e) => keys.Add(e.KeyCode.ToString());
+    // Los caracteres escritos con "Escribir texto" (2.3) llegan como Packet + KeyPress
+    var typed = new System.Text.StringBuilder();
+    form.KeyDown += (_, e) => { if (e.KeyCode != Keys.Packet) keys.Add(e.KeyCode.ToString()); };
+    form.KeyPress += (_, e) => { if (!char.IsControl(e.KeyChar)) typed.Append(e.KeyChar); };
     form.MouseWheel += (_, e) => wheel += e.Delta / 120;
     form.Shown += async (_, _) =>
     {
@@ -41,6 +44,7 @@ static void Target(int seconds)
         Console.WriteLine($"  orden: {string.Join(" -> ", hits.Take(6))}");
         if (keys.Count > 0) Console.WriteLine($"  teclas: {string.Join(" ", keys)}");
         if (wheel != 0) Console.WriteLine($"  rueda: {wheel} pasos");
+        if (typed.Length > 0) Console.WriteLine($"  texto: {typed}");
         form.Close();
     };
     Application.Run(form);

@@ -4,7 +4,8 @@ using Autoclicker.Persistence;
 
 namespace Autoclicker.Macros;
 
-public enum MacroEventKind { Move, Down, Up, Wheel, HWheel, KeyDown, KeyUp }
+/// <summary>TypeChar (2.3): escribe el carácter Data tal cual (texto insertado en el editor).</summary>
+public enum MacroEventKind { Move, Down, Up, Wheel, HWheel, KeyDown, KeyUp, TypeChar }
 
 public enum MacroButton { Left, Right, Middle, X1, X2 }
 
@@ -32,6 +33,16 @@ public sealed class Macro
     public int? HotkeyVk { get; set; }
     public uint HotkeyModifiers { get; set; }
 
+    /// <summary>
+    /// Posiciones relativas a una ventana (2.3): proceso de la ventana y dónde estaba su esquina
+    /// (zona cliente, en pantalla) cuando se tomaron las posiciones. Al reproducir, todo se desplaza
+    /// lo que se haya movido la ventana. Null = posiciones de pantalla.
+    /// </summary>
+    public string? WindowProcess { get; set; }
+    public string? WindowTitle { get; set; }
+    public int WindowX { get; set; }
+    public int WindowY { get; set; }
+
     /// <summary>Archivo del que se cargó (para renombrar o borrar). Null = aún no guardada.</summary>
     internal string? FilePath { get; set; }
 
@@ -41,7 +52,23 @@ public sealed class Macro
     public int Moves => Events.Count(e => e.Kind == MacroEventKind.Move);
     public int Scrolls => Events.Count(e => e.Kind is MacroEventKind.Wheel or MacroEventKind.HWheel);
 
-    public Macro Clone(string name) => new() { Name = name, Created = DateTime.Now, Events = [.. Events] };
+    public Macro Clone(string name) => new()
+    {
+        Name = name, Created = DateTime.Now, Events = [.. Events],
+        WindowProcess = WindowProcess, WindowTitle = WindowTitle, WindowX = WindowX, WindowY = WindowY,
+    };
+
+    /// <summary>Copia con las posiciones del ratón desplazadas (para posiciones relativas a una ventana).</summary>
+    public Macro Shifted(int dx, int dy)
+    {
+        var copy = Clone(Name);
+        copy.HotkeyVk = HotkeyVk;
+        copy.HotkeyModifiers = HotkeyModifiers;
+        if (dx != 0 || dy != 0)
+            copy.Events = Events.Select(e => e.Kind is MacroEventKind.Move or MacroEventKind.Down or MacroEventKind.Up
+                ? e with { X = e.X + dx, Y = e.Y + dy } : e).ToList();
+        return copy;
+    }
 
     public Input.Hotkey? Hotkey => HotkeyVk is int vk ? new Input.Hotkey(vk, HotkeyModifiers) : null;
 
@@ -57,6 +84,10 @@ public sealed class Macro
         ["Created"] = Created.ToString("o", CultureInfo.InvariantCulture),
         ["HotkeyVk"] = HotkeyVk,
         ["HotkeyModifiers"] = HotkeyModifiers,
+        ["WindowProcess"] = WindowProcess,
+        ["WindowTitle"] = WindowTitle,
+        ["WindowX"] = WindowX,
+        ["WindowY"] = WindowY,
         ["Events"] = EncodeEvents(Events),
     });
 
@@ -71,6 +102,10 @@ public sealed class Macro
             Events = DecodeEvents(j.Str("Events") ?? ""),
             HotkeyVk = j.IntOrNull("HotkeyVk"),
             HotkeyModifiers = (uint)j.Int("HotkeyModifiers", 0),
+            WindowProcess = string.IsNullOrWhiteSpace(j.Str("WindowProcess")) ? null : j.Str("WindowProcess"),
+            WindowTitle = j.Str("WindowTitle"),
+            WindowX = j.Int("WindowX", 0),
+            WindowY = j.Int("WindowY", 0),
         };
     }
 

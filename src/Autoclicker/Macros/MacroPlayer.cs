@@ -136,7 +136,7 @@ public sealed unsafe class MacroPlayer : IDisposable
     private const uint INPUT_MOUSE = 0, INPUT_KEYBOARD = 1;
     private const uint MOUSEEVENTF_XDOWN = 0x0080, MOUSEEVENTF_XUP = 0x0100;
     private const uint MOUSEEVENTF_WHEEL = 0x0800, MOUSEEVENTF_HWHEEL = 0x1000;
-    private const uint KEYEVENTF_EXTENDEDKEY = 0x0001, KEYEVENTF_KEYUP = 0x0002, KEYEVENTF_SCANCODE = 0x0008;
+    private const uint KEYEVENTF_EXTENDEDKEY = 0x0001, KEYEVENTF_KEYUP = 0x0002, KEYEVENTF_UNICODE = 0x0004, KEYEVENTF_SCANCODE = 0x0008;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct KEYBDINPUT
@@ -195,6 +195,9 @@ public sealed unsafe class MacroPlayer : IDisposable
                 SendKey(e, up: true);
                 keys.Remove(e.Data);
                 break;
+            case MacroEventKind.TypeChar:
+                SendChar((char)e.Data);
+                break;
         }
     }
 
@@ -240,6 +243,23 @@ public sealed unsafe class MacroPlayer : IDisposable
         else
             input.u.ki = new KEYBDINPUT { wVk = (ushort)e.Data, dwFlags = flags, dwExtraInfo = MouseInput.Signature };
         SendInput(1, &input, sizeof(INPUT));
+    }
+
+    /// <summary>Escribe un carácter tal cual (KEYEVENTF_UNICODE): no depende de la distribución del teclado.</summary>
+    private static void SendChar(char c)
+    {
+        if (c == '\n' || c == '\r')
+        {
+            // Salto de línea = Intro de verdad (las apps no siempre aceptan el carácter)
+            KeyInput.Send(0x0D, down: true, up: true);
+            return;
+        }
+        INPUT* inputs = stackalloc INPUT[2];
+        inputs[0] = new INPUT { type = INPUT_KEYBOARD };
+        inputs[0].u.ki = new KEYBDINPUT { wScan = c, dwFlags = KEYEVENTF_UNICODE, dwExtraInfo = MouseInput.Signature };
+        inputs[1] = inputs[0];
+        inputs[1].u.ki.dwFlags = KEYEVENTF_UNICODE | KEYEVENTF_KEYUP;
+        SendInput(2, inputs, sizeof(INPUT));
     }
 
     public void Dispose()

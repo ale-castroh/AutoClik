@@ -31,9 +31,10 @@ public partial class PositionPicker : Window
     }
 
     /// <summary>Muestra el selector y devuelve el punto elegido, o null si se canceló.</summary>
-    public static (int X, int Y)? Pick(Window? owner)
+    public static (int X, int Y)? Pick(Window? owner, string? hint = null)
     {
         var picker = new PositionPicker { Owner = owner };
+        if (hint != null) picker.HintText.Text = hint;
         picker.ShowDialog();
         return picker.Result;
     }

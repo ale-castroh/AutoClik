@@ -48,6 +48,7 @@ $ui = @(
     @{ Name = 'Anti-AFK (experimental)'; File = 'antiafk.ps1' },
     @{ Name = 'Macros: grabar y reproducir'; File = 'macros.ps1' },
     @{ Name = 'Tecla, rueda y mini ventana'; File = 'teclas.ps1' },
+    @{ Name = 'Editor de macros'; File = 'macro-editor.ps1' },
     @{ Name = 'Clics de ratón reales en cada sección'; File = 'clics-reales.ps1' }
 )
 foreach ($t in $ui) {

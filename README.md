@@ -39,8 +39,9 @@ a donde quieras y volver para pulsar **Detener**.
 | **⚙ Ajustes → Clics** | Variación aleatoria del intervalo, desvío del punto fijo, retardo de inicio, pausar si cambia la ventana activa, devolver el ratón a su sitio tras cada clic (posición fija o puntos) |
 | **⚙ Ajustes → General** | Parar al llevar el ratón a una esquina, minimizar/cerrar a la bandeja, iniciar con Windows (oculto en la bandeja), **mini ventana** (con AutoClik oculto, una ventanita flotante con el estado y Detener), fondo translúcido |
 | **Macros → Grabar** (F7) | Graba ratón (movimientos, clics, arrastres, rueda) y teclado con sus tiempos reales. La ventana se oculta y aparece una barra flotante; F7 o "Terminar" acaban. Se puede grabar todo, solo el ratón o solo las teclas. No graba los clics sobre AutoClik ni las teclas de los atajos, y quita la espera inicial |
-| **Macros → Reproducir** (F8) | Una vez, N veces, sin fin o durante X minutos, a ×0,5 · ×1 · ×2 · ×4 · ×10. Las teclas se envían como teclas físicas (funcionan en juegos). F8, la esquina de emergencia o Detener la paran, y nunca deja teclas ni botones pulsados |
+| **Macros → Reproducir** (F8) | Una vez, N veces, sin fin o durante X minutos, a ×0,5 · ×1 · ×2 · ×4 u otra velocidad. Las teclas se envían como teclas físicas (funcionan en juegos). F8, la esquina de emergencia o Detener la paran, y nunca deja teclas ni botones pulsados |
 | **Macros → Macro** | Biblioteca: elegir, **asignar un atajo propio** (F9 → "Farmeo"), renombrar, duplicar, exportar e importar (archivos `.autoclik`) o eliminar. Se guardan en `%AppData%\AutoClik\macros` |
+| **Macros → Macro → Editar…** | **Editor de macros**: la macro como lista de pasos legibles ("Clic izquierdo en 878, 487", "Pulsar E (0,12 s)", "Escribir «hola»"). Borrar, subir/bajar, deshacer; cambiar la espera antes de cada paso, la tecla, cuánto se mantiene, la posición de un clic o un texto; **insertar** esperas, teclas, textos y clics; **limpiar** (acortar esperas largas, quitar movimientos del ratón); **Probar** sin guardar; y **posiciones relativas a una ventana** (si el juego se mueve, los clics lo siguen; si no está abierto, avisa) |
 | **Macros → Velocidad** | ×0,5 · ×1 · ×2 · ×4 u **Otra** (libre, de ×0,1 a ×20) |
 | **⚙ Ajustes → Experimental** | Muestra las funciones en pruebas (de momento, el Anti-AFK). Apagado por defecto |
 | **Anti-AFK** (experimental) | Cada X minutos (1–18) trae al frente la ventana elegida (p. ej. Roblox) un instante, hace un clic en el punto elegido (o pulsa una tecla, p. ej. Espacio) y te devuelve a tu ventana con el ratón donde estaba. Espera a que dejes de usar el PC para no robarte teclas. **Probar ahora** hace un clic al momento |
@@ -89,12 +90,12 @@ Los textos de la interfaz están en `src/Autoclicker/Localization/Strings.cs` (e
 src/Autoclicker/
   Engine/       motor de clics (hilo dedicado, temporizador de alta resolución, SendInput)
   Input/        atajo global, parada en esquina, grabadora, anti-AFK
-  Macros/       macros: modelo, biblioteca, grabadora (hooks) y reproductor
+  Macros/       macros: modelo, pasos del editor, biblioteca, grabadora (hooks) y reproductor
   Markers/      puntos y marcadores en pantalla
   Persistence/  perfiles y guardado en JSON
   Interop/      Win32: fondo translúcido, bandeja, logo, inicio con Windows
   Theme/        paletas claro/oscuro, estilos de los controles y formas del logo
-  Views/        selector de posición, marcadores, editor, diálogos, barra de grabación
+  Views/        selector de posición, marcadores, editor de puntos, editor de macros, diálogos, barra de grabación
 tests/
   Autoclicker.Bench/  precisión del motor y clics reales sobre una ventana de prueba
 tools/make-icon.ps1   regenera el icono del .exe (Assets/app.ico)
