@@ -38,7 +38,68 @@ public partial class MainWindow
         _macroTimer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(100) };
         _macroTimer.Tick += (_, _) => UpdateMacroUi();
         MacroRecorder.Changed += UpdateMacroBar;
+        InitSpeedBox();
         UpdateMacroUi();
+    }
+
+    // ================= Atajo propio de cada macro (2.2) =================
+
+    private readonly List<(Macro Macro, HotkeyManager Manager)> _macroHotkeys = [];
+
+    /// <summary>Vuelve a registrar los atajos de las macros (al abrir, y al asignar, renombrar o borrar).</summary>
+    private void RebuildMacroHotkeys()
+    {
+        foreach (var (_, manager) in _macroHotkeys) manager.Dispose();
+        _macroHotkeys.Clear();
+        if (_hwnd == 0) return;
+
+        int id = 100;
+        foreach (var macro in _macros)
+        {
+            if (macro.Hotkey is not { } key) continue;
+            var manager = new HotkeyManager(_hwnd, id++);
+            Macro m = macro;
+            manager.Pressed += () => OnMacroHotkey(m);
+            if (manager.TrySet(key)) _macroHotkeys.Add((macro, manager));
+            else manager.Dispose(); // otra app ya usa esa tecla
+        }
+    }
+
+    private bool HandleMacroHotkeyMessage(int msg, nint wParam) => _macroHotkeys.Any(h => h.Manager.HandleMessage(msg, wParam));
+
+    /// <summary>Atajo de una macro: la reproduce; si ya se está reproduciendo esa, la para.</summary>
+    private void OnMacroHotkey(Macro macro)
+    {
+        if (_macroRecording || _recording) return;
+        if (_player.IsPlaying)
+        {
+            bool same = macro == _macro;
+            SetChecked(PlayMacroButton, false, raise: true);
+            if (same) return;
+        }
+        SelectMacro(macro);
+        UpdateMacroUi();
+        SetChecked(PlayMacroButton, true, raise: true);
+    }
+
+    private void AssignMacroHotkey()
+    {
+        if (_macro is not { } macro) return;
+        var (accepted, key) = KeyDialog.Ask(this, Strings.F("MacroHotkeyTitle", macro.Name), macro.Hotkey, k => MacroHotkeyConflict(k, macro));
+        if (!accepted) return;
+        macro.HotkeyVk = key?.VirtualKey;
+        macro.HotkeyModifiers = key?.Modifiers ?? 0;
+        _macroStore.Save(macro);
+        RebuildMacroHotkeys();
+        UpdateMacroUi();
+    }
+
+    /// <summary>Error si la tecla ya es otro atajo de AutoClik (F6, F7, F8 u otra macro).</summary>
+    private string? MacroHotkeyConflict(Hotkey key, Macro self)
+    {
+        if (AllHotkeys.Any(h => h.Current == key)) return Strings.F("HotkeyTaken", key);
+        var other = _macros.FirstOrDefault(m => m != self && m.Hotkey == key);
+        return other != null ? Strings.F("MacroHotkeyUsed", key, other.Name) : null;
     }
 
     // ================= Grabar =================
@@ -160,8 +221,30 @@ public partial class MainWindow
         MacroSpeedHalf.IsChecked == true ? 0.5
         : MacroSpeed2.IsChecked == true ? 2
         : MacroSpeed4.IsChecked == true ? 4
-        : MacroSpeed10.IsChecked == true ? 10
+        : MacroSpeedCustom.IsChecked == true ? CustomMacroSpeed
         : 1;
+
+    /// <summary>Velocidad escrita en "Otra" (acepta 1,5 y 1.5), entre ×0,1 y ×20.</summary>
+    private double CustomMacroSpeed =>
+        double.TryParse(MacroSpeedBox.Text.Replace(',', '.'), System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out double v) && v > 0
+            ? Compat.Clamp(v, 0.1, 20) : 1;
+
+    private static string FormatSpeed(double v) =>
+        v.ToString("0.##", System.Globalization.CultureInfo.CurrentCulture);
+
+    /// <summary>En el campo de velocidad, solo dígitos y un separador decimal.</summary>
+    private void InitSpeedBox()
+    {
+        MacroSpeedBox.PreviewTextInput += (_, e) =>
+        {
+            string result = MacroSpeedBox.Text.Remove(MacroSpeedBox.SelectionStart, MacroSpeedBox.SelectionLength)
+                .Insert(MacroSpeedBox.SelectionStart, e.Text);
+            e.Handled = !(result.All(c => Compat.IsDigit(c) || c is ',' or '.') && result.Count(c => c is ',' or '.') <= 1);
+        };
+        MacroSpeedBox.GotKeyboardFocus += (_, _) => MacroSpeedBox.SelectAll();
+        MacroSpeedBox.LostKeyboardFocus += (_, _) => MacroSpeedBox.Text = FormatSpeed(CustomMacroSpeed);
+    }
 
     private MacroRecordMode SelectedRecordMode =>
         MacroModeMouse.IsChecked == true ? MacroRecordMode.Mouse
@@ -190,13 +273,19 @@ public partial class MainWindow
 
         foreach (var macro in _macros)
         {
-            var item = new MenuItem { Header = macro.Name, Icon = macro == _macro ? "" : null };
+            var item = new MenuItem
+            {
+                Header = macro.Name,
+                Icon = macro == _macro ? "" : null,
+                InputGestureText = macro.Hotkey?.ToString() ?? "",
+            };
             item.Click += (_, _) => { SelectMacro(macro); UpdateMacroUi(); };
             menu.Items.Add(item);
         }
         if (_macros.Count > 0) menu.Items.Add(new Separator());
 
         bool has = _macro != null;
+        menu.Items.Add(MacroAction("MacroAssignHotkey", "", AssignMacroHotkey, has));
         menu.Items.Add(MacroAction("MacroRename", "", RenameMacro, has));
         menu.Items.Add(MacroAction("MacroDuplicate", "", DuplicateMacro, has));
         menu.Items.Add(MacroAction("MacroExport", "", ExportMacro, has));
@@ -231,6 +320,7 @@ public partial class MainWindow
         if (_macroStore.Rename(macro, name))
         {
             _macros = _macros.OrderBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+            RebuildMacroHotkeys();
             ScheduleSave();
         }
         UpdateMacroUi();
@@ -254,6 +344,7 @@ public partial class MainWindow
             return;
         _macroStore.Delete(macro);
         _macros.Remove(macro);
+        RebuildMacroHotkeys();
         SelectMacro(_macros.FirstOrDefault());
         UpdateMacroUi();
     }
@@ -288,11 +379,13 @@ public partial class MainWindow
         try
         {
             Macro macro = MacroStore.Import(dialog.FileName);
+            if (macro.Hotkey is { } k && MacroHotkeyConflict(k, macro) != null) macro.HotkeyVk = null;
             macro.Name = MacroStore.UniqueName(_macros, macro.Name.Length > 0 ? macro.Name : Path.GetFileNameWithoutExtension(dialog.FileName));
             _macroStore.Save(macro);
             _macros.Add(macro);
             _macros = _macros.OrderBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
             SelectMacro(macro);
+            RebuildMacroHotkeys();
             _macroNotice = Strings.T("MacroImported");
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException
@@ -386,6 +479,8 @@ public partial class MainWindow
 
     private void DisposeMacros()
     {
+        foreach (var (_, manager) in _macroHotkeys) manager.Dispose();
+        _macroHotkeys.Clear();
         if (_macroRecording) MacroRecorder.Stop();
         MacroRecorder.Changed -= UpdateMacroBar;
         _macroBar?.Close();

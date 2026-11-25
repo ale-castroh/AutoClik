@@ -102,6 +102,23 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 2.2.0 — Teclas, mini ventana y atajos de macro ✅
+- **Acción** en Clics (antes "Botón"): izquierdo, derecho, central, **rueda** (abajo/arriba, 1-20 pasos) o
+  **tecla** (`Engine/KeyInput.cs`: SendInput por código de escaneo; simple, doble o mantenida). La tecla va a
+  la ventana activa y nunca a AutoClik (escribiría en sus casillas): con AutoClik delante, espera ("Cambia a
+  la ventana de destino"). Con Tecla, la posición se atenúa y no se usa. Se guarda en el perfil.
+- **Anti-AFK con tecla** (Espacio por defecto): activa la ventana y pulsa la tecla 60 ms en vez de clicar.
+- **Macros**: velocidad "Otra" libre (×0,1-×20, acepta coma o punto; sustituye a ×10) y **atajo propio por
+  macro** (menú → "Asignar atajo…", diálogo `Views/KeyDialog`), guardado en el archivo de la macro, con
+  comprobación de choques con F6/F7/F8 y con otras macros. El atajo reproduce esa macro; otra vez, la para.
+  El menú muestra la tecla de cada macro a la derecha.
+- **Mini ventana flotante** (`Views/MiniHud`): solo con AutoClik oculto y algo en marcha; estado, contador
+  y Detener (autoclicker) o vuelta, tiempo y "F8 para detener" (macros, traspasable para que la macro no la
+  pulse). Se arrastra y recuerda el sitio. Ajustes → General → "Mini ventana al ocultar AutoClik".
+- Descartado por el usuario: "parar si mueves el ratón" (interrumpiría demasiado).
+- Pruebas: nueva `tests/ui/teclas.ps1` (tecla A x5 en la diana solo tras darle el foco, rueda -6, mini
+  ventana y su Detener); anti-AFK con Espacio; macros con velocidad ×3 y atajo F9 desde el menú.
+
 ## Versión 2.1.0 — Macros ✅
 - Nueva sección **Macros** (`Macros/`, `MainWindow.Macros.cs`), al nivel de TinyTask o mejor:
   - **Grabar** (F7): hooks de ratón y teclado de bajo nivel; movimientos cada 8 ms como mucho (y siempre el

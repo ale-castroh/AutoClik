@@ -2,6 +2,9 @@ namespace Autoclicker.Engine;
 
 public enum MouseButtonKind { Left, Right, Middle }
 
+/// <summary>Qué hace cada "clic": un botón del ratón, girar la rueda o pulsar una tecla (2.2).</summary>
+public enum ClickAction { Mouse, Wheel, Key }
+
 /// <summary>Drag = pulsar, moverse hasta otro punto y soltar (solo en puntos grabados).</summary>
 public enum ClickKind { Single, Double, Hold, Drag }
 
@@ -22,6 +25,15 @@ public sealed record ClickSettings
     public double JitterPercent { get; init; }
 
     public MouseButtonKind Button { get; init; } = MouseButtonKind.Left;
+
+    /// <summary>Mouse = botón (Button); Wheel = girar la rueda (WheelDelta); Key = pulsar KeyVk.</summary>
+    public ClickAction Action { get; init; } = ClickAction.Mouse;
+
+    /// <summary>Tecla virtual que se pulsa con Action = Key (por defecto E).</summary>
+    public int KeyVk { get; init; } = 0x45;
+
+    /// <summary>Giro de la rueda con Action = Wheel: 120 por paso; negativo = hacia abajo.</summary>
+    public int WheelDelta { get; init; } = -360;
 
     public ClickKind Kind { get; init; } = ClickKind.Single;
 

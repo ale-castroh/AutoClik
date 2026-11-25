@@ -29,6 +29,7 @@ $root = $AE::FromHandle($proc.MainWindowHandle)
 function Find($id) { $root.FindFirst($TS::Descendants, (New-Object Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id))) }
 function Tog($id) { (Find $id).GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle() }
 function Text($id) { (Find $id).Current.Name }
+function Sel($id) { (Find $id).GetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern).Select() }
 
 # Sin "Funciones experimentales" el Anti-AFK no aparece en la barra lateral (2.0)
 "0a) Sin experimentales: Anti-AFK en la barra=" + ($null -ne (Find "NavAntiAfkButton")) + " (esperado False)"
@@ -49,7 +50,14 @@ Start-Sleep -Milliseconds 900
 At 1000 800
 (Find "AfkTestButton").GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
 Start-Sleep -Milliseconds 1200
-"2b) Probar ahora: estado='$(Text "AntiAfkStatusText")'  detalle='$(Text "AfkDetailText")'  delante='$([R]::ForegroundTitle())'  cursor=$(Pos) (esperado 'Clic de prueba hecho', AutoClik, (1000,800))"
+"2b) Probar ahora: estado='$(Text "AntiAfkStatusText")'  detalle='$(Text "AfkDetailText")'  delante='$([R]::ForegroundTitle())'  cursor=$(Pos) (esperado 'Prueba hecha', AutoClik, (1000,800))"
+
+# 2c) Acción Tecla (Espacio por defecto): "Probar ahora" pulsa Espacio en la diana (2.2)
+Sel "AfkKeyRadio"; Start-Sleep -Milliseconds 200
+(Find "AfkTestButton").GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+Start-Sleep -Milliseconds 1200
+"2c) Probar con tecla: estado='$(Text "AntiAfkStatusText")' tecla='$(Text "AfkKeyButton")' (esperado 'Prueba hecha', Espacio; la diana suma 'Space')"
+Sel "AfkClickRadio"; Start-Sleep -Milliseconds 200
 
 # 3) Activar y dejar el PC quieto 9 s: debe clicar la diana una o dos veces y volver
 Tog "AntiAfkSwitch"; Start-Sleep -Milliseconds 300

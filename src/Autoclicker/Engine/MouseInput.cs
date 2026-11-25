@@ -67,6 +67,22 @@ internal static unsafe class MouseInput
         return SendInput((uint)n, inputs, sizeof(INPUT)) == n;
     }
 
+    private const uint MOUSEEVENTF_WHEEL = 0x0800;
+
+    /// <summary>Gira la rueda <paramref name="delta"/> (120 por paso; negativo = abajo). Con posición fija, allí.</summary>
+    public static bool SendWheel(ClickSettings s, POINT p, int delta)
+    {
+        INPUT* inputs = stackalloc INPUT[2];
+        int n = 0;
+        if (s.UseFixedPosition) inputs[n++] = MoveTo(p);
+        inputs[n++] = new INPUT
+        {
+            type = INPUT_MOUSE,
+            mi = new MOUSEINPUT { dwFlags = MOUSEEVENTF_WHEEL, mouseData = unchecked((uint)delta), dwExtraInfo = Signature },
+        };
+        return SendInput((uint)n, inputs, sizeof(INPUT)) == n;
+    }
+
     /// <summary>Mueve el cursor a <paramref name="p"/> (durante un arrastre).</summary>
     public static void MoveCursor(POINT p)
     {

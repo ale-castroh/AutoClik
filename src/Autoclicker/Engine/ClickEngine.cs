@@ -20,6 +20,7 @@ public sealed class ClickEngine : IDisposable
     private Thread? _thread;
     private volatile bool _stopRequested;
     private volatile bool _paused;
+    private volatile bool _ownWindowActive; // acción Tecla con AutoClik delante: se espera a otra ventana
     private nint _lockedWindow;
     private long _clickCount;
 
@@ -27,7 +28,7 @@ public sealed class ClickEngine : IDisposable
     public bool IsPaused => _paused;
 
     /// <summary>true si aún no hay ventana fijada (se espera a que se active una que no sea esta app).</summary>
-    public bool IsWaitingForWindow => _paused && Volatile.Read(ref _lockedWindow) == IntPtr.Zero;
+    public bool IsWaitingForWindow => (_paused && Volatile.Read(ref _lockedWindow) == IntPtr.Zero) || _ownWindowActive;
 
     /// <summary>Margen final que se apura girando en vez de durmiendo.</summary>
     public double SpinMarginMs { get; set; } = 0.25;
@@ -56,6 +57,7 @@ public sealed class ClickEngine : IDisposable
             if (_thread != null) return;
             _stopRequested = false;
             _paused = false;
+            _ownWindowActive = false;
             _lockedWindow = 0;
             LastError = null;
             _stopEvent.Reset();
@@ -204,7 +206,9 @@ public sealed class ClickEngine : IDisposable
     private bool DoClick(ClickSettings s, Random random, HighResTimer timer, WaitHandle[] handles, long freq, long spinTicks)
     {
         if (ClickOverride != null) return ClickOverride(s);
+        if (s.Action == ClickAction.Key) return DoKey(s, timer, handles, freq, spinTicks);
         if (!MouseInput.TryGetTarget(s, random, out var p)) return false;
+        if (s.Action == ClickAction.Wheel) return MouseInput.SendWheel(s, p, s.WheelDelta);
 
         // Dónde estaba el cursor, para devolverlo ahí al soltar.
         EngineNative.POINT? restore = null;
@@ -243,6 +247,25 @@ public sealed class ClickEngine : IDisposable
         }
 
         MouseInput.Send(s, p, down: false, up: true, restore);
+        return true;
+    }
+
+    /// <summary>
+    /// Acción Tecla: simple, doble o mantenida. Nunca con AutoClik delante (escribiría en sus propias
+    /// casillas): entonces espera a que el usuario cambie a la ventana de destino.
+    /// </summary>
+    private bool DoKey(ClickSettings s, HighResTimer timer, WaitHandle[] handles, long freq, long spinTicks)
+    {
+        _ownWindowActive = MouseInput.IsOwnProcessWindow(EngineNative.GetForegroundWindow());
+        if (_ownWindowActive) return false;
+
+        if (s.Kind == ClickKind.Single) return KeyInput.Send(s.KeyVk, down: true, up: true);
+        if (s.Kind == ClickKind.Double) return KeyInput.Send(s.KeyVk, true, true) & KeyInput.Send(s.KeyVk, true, true);
+
+        // Mantener: si se pide parar durante la pulsación, se suelta enseguida.
+        KeyInput.Send(s.KeyVk, down: true, up: false);
+        WaitUntil(Stopwatch.GetTimestamp() + ToTicks(s.HoldDuration, freq), timer, handles, freq, spinTicks);
+        KeyInput.Send(s.KeyVk, down: false, up: true);
         return true;
     }
 

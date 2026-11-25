@@ -78,6 +78,7 @@ public partial class MainWindow
         EmergencySwitch.IsChecked = p.EmergencyCorner;
         PinButton.IsChecked = p.Pinned;
         TranslucentSwitch.IsChecked = p.Translucent;
+        HudSwitch.IsChecked = p.HudEnabled;
         (p.HotkeyHoldMode ? HoldModeRadio : ToggleModeRadio).IsChecked = true;
 
         // Anti-AFK: primero la ventana y los minutos, luego el interruptor (que lo arranca).
@@ -85,6 +86,11 @@ public partial class MainWindow
         AfkMinutesBox.Text = Compat.Clamp(p.AntiAfkMinutes, 1, 18).ToString();
         _antiAfk.SetMinutes(p.AntiAfkMinutes);
         RefreshAfkTarget();
+        _afkKeyVk = p.AntiAfkKeyVk > 0 ? p.AntiAfkKeyVk : 0x20;
+        _antiAfk.SetKey(_afkKeyVk);
+        AfkKeyButton.Content = Input.Hotkey.KeyName(_afkKeyVk);
+        (p.AntiAfkUseKey ? AfkKeyRadio : AfkClickRadio).IsChecked = true;
+        _antiAfk.SetUseKey(p.AntiAfkUseKey);
         // Macros
         (p.MacroRepeat switch
         {
@@ -97,12 +103,13 @@ public partial class MainWindow
         MacroMinutesBox.Text = Compat.Clamp(p.MacroMinutes, 1, 9_999).ToString();
         (p.MacroSpeed switch
         {
-            <= 0.5 => MacroSpeedHalf,
-            >= 10 => MacroSpeed10,
-            >= 4 => MacroSpeed4,
-            >= 2 => MacroSpeed2,
-            _ => MacroSpeed1,
+            0.5 => MacroSpeedHalf,
+            1 => MacroSpeed1,
+            2 => MacroSpeed2,
+            4 => MacroSpeed4,
+            _ => MacroSpeedCustom,
         }).IsChecked = true;
+        MacroSpeedBox.Text = FormatSpeed(p.MacroSpeed is 0.5 or 1 or 2 or 4 ? 1.5 : Compat.Clamp(p.MacroSpeed, 0.1, 20));
         (p.MacroMode switch
         {
             Macros.MacroRecordMode.Mouse => MacroModeMouse,
@@ -141,6 +148,9 @@ public partial class MainWindow
         EmergencyCorner = EmergencySwitch.IsChecked == true,
         Pinned = PinButton.IsChecked == true,
         Translucent = TranslucentSwitch.IsChecked == true,
+        HudEnabled = HudSwitch.IsChecked == true,
+        HudLeft = _data.Prefs.HudLeft,
+        HudTop = _data.Prefs.HudTop,
         WindowLeft = double.IsNaN(Left) ? _data.Prefs.WindowLeft : Left,
         WindowTop = double.IsNaN(Top) ? _data.Prefs.WindowTop : Top,
         Experimental = ExperimentalSwitch.IsChecked == true,
@@ -163,6 +173,8 @@ public partial class MainWindow
         AntiAfkTitle = _antiAfk.DisplayName,
         AntiAfkX = _antiAfk.X,
         AntiAfkY = _antiAfk.Y,
+        AntiAfkUseKey = AfkKeyRadio.IsChecked == true,
+        AntiAfkKeyVk = _afkKeyVk,
     };
 
     private bool _syncingAutostart;
@@ -195,12 +207,21 @@ public partial class MainWindow
             _ => UnitMsRadio,
         }).IsChecked = true;
 
-        (p.Button switch
+        (p.Action switch
         {
-            Engine.MouseButtonKind.Right => RightButtonRadio,
-            Engine.MouseButtonKind.Middle => MiddleButtonRadio,
-            _ => LeftButtonRadio,
+            Engine.ClickAction.Key => KeyActionRadio,
+            Engine.ClickAction.Wheel => WheelActionRadio,
+            _ => p.Button switch
+            {
+                Engine.MouseButtonKind.Right => RightButtonRadio,
+                Engine.MouseButtonKind.Middle => MiddleButtonRadio,
+                _ => LeftButtonRadio,
+            },
         }).IsChecked = true;
+        _actionKeyVk = p.KeyVk > 0 ? p.KeyVk : 0x45;
+        ActionKeyButton.Content = Input.Hotkey.KeyName(_actionKeyVk);
+        (p.WheelUp ? WheelUpRadio : WheelDownRadio).IsChecked = true;
+        WheelStepsBox.Text = Compat.Clamp(p.WheelSteps, 1, 20).ToString();
 
         (p.Kind switch
         {
@@ -261,6 +282,10 @@ public partial class MainWindow
         Button = RightButtonRadio.IsChecked == true ? Engine.MouseButtonKind.Right
                : MiddleButtonRadio.IsChecked == true ? Engine.MouseButtonKind.Middle
                : Engine.MouseButtonKind.Left,
+        Action = SelectedAction,
+        KeyVk = _actionKeyVk,
+        WheelUp = WheelUpRadio.IsChecked == true,
+        WheelSteps = (int)Compat.Clamp(Number(WheelStepsBox), 1, 20),
         Kind = DoubleKindRadio.IsChecked == true ? Engine.ClickKind.Double
              : HoldKindRadio.IsChecked == true ? Engine.ClickKind.Hold
              : Engine.ClickKind.Single,

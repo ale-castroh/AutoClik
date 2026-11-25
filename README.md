@@ -24,8 +24,8 @@ a donde quieras y volver para pulsar **Detener**.
 | Dónde | Qué |
 |---|---|
 | **Intervalo** | Número + unidad (ms · s · min · h), desde 1 ms |
-| **Botón** | Izquierdo, derecho o central |
-| **Tipo** | Simple, doble o mantener pulsado (duración en ms) |
+| **Acción** | Botón izquierdo, derecho o central; **rueda** (arriba o abajo, N pasos); o **tecla** (la que elijas; va a la ventana activa, nunca a AutoClik, y funciona en juegos) |
+| **Tipo** | Simple, doble o mantener pulsado (duración en ms); también con teclas |
 | **Repetir** | Sin fin, N veces (o N vueltas con puntos) o durante X segundos |
 | **Posición → Cursor** | Clica donde esté el ratón |
 | **Posición → Fijo** | Clica siempre en un punto; **Elegir** lo marca en pantalla |
@@ -37,12 +37,13 @@ a donde quieras y volver para pulsar **Detener**.
 | **Perfil** (barra de título) | Cambiar, crear (copia del actual), renombrar o eliminar configuraciones |
 | **⚙ Ajustes → Atajo** | Clic en la tecla y pulsa otra (teclas, combinaciones o botones laterales del ratón). Modo *Alternar* o *Mantener*. También los atajos de grabar (F7) y reproducir (F8) macros |
 | **⚙ Ajustes → Clics** | Variación aleatoria del intervalo, desvío del punto fijo, retardo de inicio, pausar si cambia la ventana activa, devolver el ratón a su sitio tras cada clic (posición fija o puntos) |
-| **⚙ Ajustes → General** | Parar al llevar el ratón a una esquina, minimizar/cerrar a la bandeja, iniciar con Windows (oculto en la bandeja), fondo translúcido |
+| **⚙ Ajustes → General** | Parar al llevar el ratón a una esquina, minimizar/cerrar a la bandeja, iniciar con Windows (oculto en la bandeja), **mini ventana** (con AutoClik oculto, una ventanita flotante con el estado y Detener), fondo translúcido |
 | **Macros → Grabar** (F7) | Graba ratón (movimientos, clics, arrastres, rueda) y teclado con sus tiempos reales. La ventana se oculta y aparece una barra flotante; F7 o "Terminar" acaban. Se puede grabar todo, solo el ratón o solo las teclas. No graba los clics sobre AutoClik ni las teclas de los atajos, y quita la espera inicial |
 | **Macros → Reproducir** (F8) | Una vez, N veces, sin fin o durante X minutos, a ×0,5 · ×1 · ×2 · ×4 · ×10. Las teclas se envían como teclas físicas (funcionan en juegos). F8, la esquina de emergencia o Detener la paran, y nunca deja teclas ni botones pulsados |
-| **Macros → Macro** | Biblioteca: elegir, renombrar, duplicar, exportar e importar (archivos `.autoclik`) o eliminar. Se guardan en `%AppData%\AutoClik\macros` |
+| **Macros → Macro** | Biblioteca: elegir, **asignar un atajo propio** (F9 → "Farmeo"), renombrar, duplicar, exportar e importar (archivos `.autoclik`) o eliminar. Se guardan en `%AppData%\AutoClik\macros` |
+| **Macros → Velocidad** | ×0,5 · ×1 · ×2 · ×4 u **Otra** (libre, de ×0,1 a ×20) |
 | **⚙ Ajustes → Experimental** | Muestra las funciones en pruebas (de momento, el Anti-AFK). Apagado por defecto |
-| **Anti-AFK** (experimental) | Cada X minutos (1–18) trae al frente la ventana elegida (p. ej. Roblox) un instante, hace un clic en el punto elegido y te devuelve a tu ventana con el ratón donde estaba. Espera a que dejes de usar el PC para no robarte teclas. **Probar ahora** hace un clic al momento |
+| **Anti-AFK** (experimental) | Cada X minutos (1–18) trae al frente la ventana elegida (p. ej. Roblox) un instante, hace un clic en el punto elegido (o pulsa una tecla, p. ej. Espacio) y te devuelve a tu ventana con el ratón donde estaba. Espera a que dejes de usar el PC para no robarte teclas. **Probar ahora** hace un clic al momento |
 | **⚙ Ajustes → Acerca de** | Versión y botón para abrir la carpeta de ajustes y del registro de errores |
 | **📌** (barra de título) | Mantener la ventana siempre visible |
 

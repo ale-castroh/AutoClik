@@ -653,6 +653,10 @@
                         <DockPanel>
                             <ContentPresenter ContentSource="Icon" Width="16" Margin="0,0,12,0" VerticalAlignment="Center"
                                               TextElement.FontFamily="{StaticResource IconFont}" TextElement.FontSize="13" />
+                            <!-- Atajo a la derecha (p. ej. la tecla de cada macro) -->
+                            <TextBlock DockPanel.Dock="Right" Margin="16,0,0,0" VerticalAlignment="Center"
+                                       Text="{TemplateBinding InputGestureText}" FontFamily="{StaticResource NumberFont}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
                             <ContentPresenter ContentSource="Header" VerticalAlignment="Center" />
                         </DockPanel>
                     </Border>

@@ -85,6 +85,16 @@ public sealed class AntiAfk
         Restart();
     }
 
+    /// <summary>true = pulsar una tecla (KeyVk) en vez de clicar en el punto (2.2).</summary>
+    public bool UseKey { get; private set; }
+
+    /// <summary>Tecla que se pulsa con UseKey (por defecto Espacio: saltar en Roblox).</summary>
+    public int KeyVk { get; private set; } = 0x20;
+
+    public void SetUseKey(bool useKey) => UseKey = useKey;
+
+    public void SetKey(int vk) => KeyVk = vk;
+
     public void SetMinutes(int minutes)
     {
         var interval = TestIntervalSeconds is int s
@@ -173,8 +183,9 @@ public sealed class AntiAfk
     {
         _busy = true;
         int x = X, y = Y;
+        int? key = UseKey ? KeyVk : null;
         var dispatcher = Dispatcher.CurrentDispatcher;
-        Task.Run(() => Pulse(target, x, y)).ContinueWith(t =>
+        Task.Run(() => Pulse(target, x, y, key)).ContinueWith(t =>
         {
             dispatcher.InvokeAsync(() =>
             {
@@ -283,7 +294,8 @@ public sealed class AntiAfk
     private static readonly ClickSettings ClickOnly = new() { Button = MouseButtonKind.Left, Kind = ClickKind.Single };
 
     /// <summary>Activa, clica y devuelve todo. Corre fuera del hilo de la interfaz. true = clic hecho.</summary>
-    private static bool Pulse(nint target, int clientX, int clientY)
+    /// <param name="key">Tecla a pulsar en vez de clicar (null = clic en el punto).</param>
+    private static bool Pulse(nint target, int clientX, int clientY, int? key)
     {
         nint previous = GetForegroundWindow();
         GetCursorPos(out POINT cursor);
@@ -291,7 +303,17 @@ public sealed class AntiAfk
         if (wasMinimized) ShowWindow(target, SW_RESTORE);
 
         bool front = Activate(target);
-        if (front)
+        if (front && key is int vk)
+        {
+            // Una pulsación algo larga (60 ms): los juegos leen el teclado a su ritmo y una muy
+            // corta podría no contar.
+            Thread.Sleep(50);
+            KeyInput.Send(vk, down: true, up: false);
+            Thread.Sleep(60);
+            KeyInput.Send(vk, down: false, up: true);
+            Thread.Sleep(50);
+        }
+        else if (front)
         {
             var p = new POINT { X = clientX, Y = clientY };
             ClientToScreen(target, ref p);

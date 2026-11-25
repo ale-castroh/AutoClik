@@ -28,6 +28,10 @@ public sealed class Macro
     public DateTime Created { get; set; } = DateTime.Now;
     public List<MacroEvent> Events { get; set; } = [];
 
+    /// <summary>Atajo propio (tecla virtual + modificadores MOD_*); null = sin atajo (2.2).</summary>
+    public int? HotkeyVk { get; set; }
+    public uint HotkeyModifiers { get; set; }
+
     /// <summary>Archivo del que se cargó (para renombrar o borrar). Null = aún no guardada.</summary>
     internal string? FilePath { get; set; }
 
@@ -39,6 +43,8 @@ public sealed class Macro
 
     public Macro Clone(string name) => new() { Name = name, Created = DateTime.Now, Events = [.. Events] };
 
+    public Input.Hotkey? Hotkey => HotkeyVk is int vk ? new Input.Hotkey(vk, HotkeyModifiers) : null;
+
     // ---------------- JSON ----------------
     // Los eventos van en una sola cadena compacta ("t,k,x,y,d,f;...") en vez de una lista JSON:
     // MiniJson escribe cada número en su línea y una macro de miles de eventos ocuparía megas.
@@ -49,6 +55,8 @@ public sealed class Macro
         ["Version"] = 1,
         ["Name"] = Name,
         ["Created"] = Created.ToString("o", CultureInfo.InvariantCulture),
+        ["HotkeyVk"] = HotkeyVk,
+        ["HotkeyModifiers"] = HotkeyModifiers,
         ["Events"] = EncodeEvents(Events),
     });
 
@@ -61,6 +69,8 @@ public sealed class Macro
             Name = j.Str("Name") ?? "",
             Created = DateTime.TryParse(j.Str("Created"), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var d) ? d : DateTime.Now,
             Events = DecodeEvents(j.Str("Events") ?? ""),
+            HotkeyVk = j.IntOrNull("HotkeyVk"),
+            HotkeyModifiers = (uint)j.Int("HotkeyModifiers", 0),
         };
     }
 

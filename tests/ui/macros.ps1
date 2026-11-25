@@ -22,7 +22,7 @@ function At($x, $y) { [System.Windows.Forms.Cursor]::Position = New-Object Drawi
 function LeftClick { [R]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 40; [R]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Milliseconds 150 }
 
 $out = Join-Path $env:TEMP "diana_p10.txt"
-$bench = Start-Process $BenchPath -ArgumentList "target", "16" -PassThru -RedirectStandardOutput $out -WindowStyle Hidden
+$bench = Start-Process $BenchPath -ArgumentList "target", "26" -PassThru -RedirectStandardOutput $out -WindowStyle Hidden
 $proc = Start-Process $AppPath -ArgumentList "--data=$data", "--record-injected", "--theme=dark" -PassThru
 while ($proc.MainWindowHandle -eq 0) { Start-Sleep -Milliseconds 50; $proc.Refresh() }
 Start-Sleep -Milliseconds 900
@@ -64,11 +64,30 @@ $stuck = @(0x41, 0x42, 0x01, 0x02) | Where-Object { ([R]::GetAsyncKeyState($_) -
 $proc.Refresh()
 "6) Ventana de nuevo visible: " + ($proc.MainWindowHandle -ne 0)
 
+# 6b) Velocidad libre (×3) y atajo propio F9 asignado desde el menú de la biblioteca (2.2)
+Sel "MacroSpeedCustom"; (Find "MacroSpeedBox").GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue("3")
+(Find "MacroPickButton").GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+Start-Sleep -Milliseconds 600
+$assign = $AE::RootElement.FindFirst($TS::Descendants, (New-Object Windows.Automation.PropertyCondition($AE::NameProperty, "Asignar atajo…")))
+if ($assign) { $assign.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke() }
+Start-Sleep -Milliseconds 800
+[R]::Key(0x78)  # F9 en el diálogo
+Start-Sleep -Milliseconds 600
+$file = Get-ChildItem (Join-Path $data "macros") -Filter *.json | Select-Object -First 1
+$hk = (Get-Content $file.FullName -Raw | ConvertFrom-Json).HotkeyVk
+"6b) Menú encontrado=$($null -ne $assign)  atajo guardado en la macro=$hk (esperado True, 120 = F9)"
+At 1000 800
+[R]::Key(0x78)  # F9: reproduce esa macro (2 vueltas a ×3)
+Start-Sleep -Milliseconds 400
+$sw = [Diagnostics.Stopwatch]::StartNew()
+while ((Text 'MacroStatusText') -ne 'Completado' -and $sw.ElapsedMilliseconds -lt 8000) { Start-Sleep -Milliseconds 50 }
+"6c) Con F9: fin='$(Text 'MacroStatusText')' en $($sw.ElapsedMilliseconds) ms (esperado Completado; la diana suma 4 clics, A B A B y 4 pasos)"
+
 $proc.CloseMainWindow() | Out-Null; $proc.WaitForExit(4000) | Out-Null
 $bench.WaitForExit(); Get-Content $out
 $files = @(Get-ChildItem (Join-Path $data "macros") -Filter *.json -ErrorAction SilentlyContinue)
 $json = Get-Content "$data\settings.json" -Raw | ConvertFrom-Json
 "7) Biblioteca: $($files.Count) archivo(s) '$($files.Name -join ', ')'  elegida='$($json.Prefs.MacroName)' repetir=$($json.Prefs.MacroRepeat) veces=$($json.Prefs.MacroCount) velocidad=$($json.Prefs.MacroSpeed)"
-"   (esperado: 1 archivo 'Macro 1.json', elegida 'Macro 1', Count, 2, 2. Diana: 6 clics, teclas A B A B A B, rueda 6)"
+"   (esperado: 1 archivo 'Macro 1.json', elegida 'Macro 1', Count, 2, 3. Diana: 10 clics, teclas A B x5, rueda 10)"
 "8) error.log creado: " + (Test-Path (Join-Path $data "error.log")) + " (esperado False)"
 [System.Windows.Forms.Cursor]::Position = $original

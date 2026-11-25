@@ -59,6 +59,9 @@ public sealed class GlobalPrefs
     public bool EmergencyCorner { get; set; } = true;
     public bool Pinned { get; set; }
     public bool Translucent { get; set; } = true;
+    public bool HudEnabled { get; set; } = true;
+    public int? HudLeft { get; set; }
+    public int? HudTop { get; set; }
     public double? WindowLeft { get; set; }
     public double? WindowTop { get; set; }
 
@@ -83,6 +86,8 @@ public sealed class GlobalPrefs
     public string? AntiAfkTitle { get; set; }
     public int AntiAfkX { get; set; }
     public int AntiAfkY { get; set; }
+    public bool AntiAfkUseKey { get; set; }
+    public int AntiAfkKeyVk { get; set; } = 0x20; // Espacio
 
     internal Dictionary<string, object?> ToJson() => new()
     {
@@ -94,6 +99,9 @@ public sealed class GlobalPrefs
         ["EmergencyCorner"] = EmergencyCorner,
         ["Pinned"] = Pinned,
         ["Translucent"] = Translucent,
+        ["HudEnabled"] = HudEnabled,
+        ["HudLeft"] = HudLeft,
+        ["HudTop"] = HudTop,
         ["WindowLeft"] = WindowLeft,
         ["WindowTop"] = WindowTop,
         ["Experimental"] = Experimental,
@@ -113,6 +121,8 @@ public sealed class GlobalPrefs
         ["AntiAfkTitle"] = AntiAfkTitle,
         ["AntiAfkX"] = AntiAfkX,
         ["AntiAfkY"] = AntiAfkY,
+        ["AntiAfkUseKey"] = AntiAfkUseKey,
+        ["AntiAfkKeyVk"] = AntiAfkKeyVk,
     };
 
     internal static GlobalPrefs FromJson(JsonObj j)
@@ -128,6 +138,9 @@ public sealed class GlobalPrefs
             EmergencyCorner = j.Bool("EmergencyCorner", d.EmergencyCorner),
             Pinned = j.Bool("Pinned", d.Pinned),
             Translucent = j.Bool("Translucent", d.Translucent),
+            HudEnabled = j.Bool("HudEnabled", d.HudEnabled),
+            HudLeft = j.IntOrNull("HudLeft"),
+            HudTop = j.IntOrNull("HudTop"),
             WindowLeft = j.NumOrNull("WindowLeft"),
             WindowTop = j.NumOrNull("WindowTop"),
             MacroRecordVk = j.Int("MacroRecordVk", d.MacroRecordVk),
@@ -148,6 +161,8 @@ public sealed class GlobalPrefs
             AntiAfkTitle = j.Str("AntiAfkTitle"),
             AntiAfkX = j.Int("AntiAfkX", 0),
             AntiAfkY = j.Int("AntiAfkY", 0),
+            AntiAfkUseKey = j.Bool("AntiAfkUseKey", false),
+            AntiAfkKeyVk = j.Int("AntiAfkKeyVk", d.AntiAfkKeyVk),
         };
     }
 }
@@ -162,6 +177,10 @@ public sealed class ProfileData
     public long Interval { get; set; } = 100;
     public IntervalUnit Unit { get; set; } = IntervalUnit.Milliseconds;
     public MouseButtonKind Button { get; set; } = MouseButtonKind.Left;
+    public ClickAction Action { get; set; } = ClickAction.Mouse;
+    public int KeyVk { get; set; } = 0x45;      // E
+    public bool WheelUp { get; set; }
+    public int WheelSteps { get; set; } = 3;
     public ClickKind Kind { get; set; } = ClickKind.Single;
     public int HoldMs { get; set; } = 100;
 
@@ -186,6 +205,10 @@ public sealed class ProfileData
         ["Interval"] = Interval,
         ["Unit"] = Unit,
         ["Button"] = Button,
+        ["Action"] = Action,
+        ["KeyVk"] = KeyVk,
+        ["WheelUp"] = WheelUp,
+        ["WheelSteps"] = WheelSteps,
         ["Kind"] = Kind,
         ["HoldMs"] = HoldMs,
         ["Repeat"] = Repeat,
@@ -211,6 +234,10 @@ public sealed class ProfileData
             Interval = j.Long("Interval", d.Interval),
             Unit = j.Enum("Unit", d.Unit),
             Button = j.Enum("Button", d.Button),
+            Action = j.Enum("Action", d.Action),
+            KeyVk = j.Int("KeyVk", d.KeyVk),
+            WheelUp = j.Bool("WheelUp", d.WheelUp),
+            WheelSteps = j.Int("WheelSteps", d.WheelSteps),
             Kind = j.Enum("Kind", d.Kind),
             HoldMs = j.Int("HoldMs", d.HoldMs),
             Repeat = j.Enum("Repeat", d.Repeat),

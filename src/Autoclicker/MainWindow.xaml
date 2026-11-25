@@ -165,16 +165,41 @@
 
                         <Border Style="{StaticResource ListDividerStyle}" />
 
-                        <!-- Botón -->
+                        <!-- Acción: un botón del ratón, la rueda o una tecla (2.2) -->
                         <DockPanel Style="{StaticResource ListRowStyle}">
                             <Border DockPanel.Dock="Right" VerticalAlignment="Center" Style="{StaticResource SegmentedContainerStyle}">
-                                <UniformGrid Columns="3">
-                                    <RadioButton x:Name="LeftButtonRadio" Content="{l:T Left}" GroupName="MouseButton" IsChecked="True" Style="{StaticResource SegmentStyle}" />
-                                    <RadioButton x:Name="RightButtonRadio" Content="{l:T Right}" GroupName="MouseButton" Style="{StaticResource SegmentStyle}" />
-                                    <RadioButton x:Name="MiddleButtonRadio" Content="{l:T Middle}" GroupName="MouseButton" Style="{StaticResource SegmentStyle}" />
+                                <UniformGrid Columns="5">
+                                    <RadioButton x:Name="LeftButtonRadio" Content="{l:T LeftShort}" GroupName="MouseButton" IsChecked="True" Style="{StaticResource CompactSegmentStyle}"
+                                                 ToolTip="{l:T Left}" />
+                                    <RadioButton x:Name="RightButtonRadio" Content="{l:T RightShort}" GroupName="MouseButton" Style="{StaticResource CompactSegmentStyle}"
+                                                 ToolTip="{l:T Right}" />
+                                    <RadioButton x:Name="MiddleButtonRadio" Content="{l:T Middle}" GroupName="MouseButton" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="WheelActionRadio" Content="{l:T Wheel}" GroupName="MouseButton" Style="{StaticResource CompactSegmentStyle}"
+                                                 ToolTip="{l:T WheelTip}" />
+                                    <RadioButton x:Name="KeyActionRadio" Content="{l:T KeyAction}" GroupName="MouseButton" Style="{StaticResource CompactSegmentStyle}"
+                                                 ToolTip="{l:T KeyActionTip}" />
                                 </UniformGrid>
                             </Border>
-                            <TextBlock Text="{l:T Button}" Style="{StaticResource RowTitleStyle}" />
+                            <TextBlock Text="{l:T Action}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                        <DockPanel Style="{StaticResource DetailRowStyle}"
+                                   Visibility="{Binding IsChecked, ElementName=KeyActionRadio, Converter={StaticResource BoolToVis}}">
+                            <ToggleButton x:Name="ActionKeyButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                          Content="E" Style="{StaticResource KeyCapStyle}" ToolTip="{l:T ActionKeyTip}"
+                                          Checked="AnyHotkeyButton_Checked" Unchecked="AnyHotkeyButton_Unchecked" />
+                            <TextBlock Text="{l:T PressTheKey}" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <DockPanel Style="{StaticResource DetailRowStyle}"
+                                   Visibility="{Binding IsChecked, ElementName=WheelActionRadio, Converter={StaticResource BoolToVis}}">
+                            <TextBlock DockPanel.Dock="Right" Text="{l:T WheelSteps}" Style="{StaticResource UnitStyle}" />
+                            <TextBox x:Name="WheelStepsBox" DockPanel.Dock="Right" Text="3" MaxLength="2" Width="48" Style="{StaticResource SmallFieldStyle}" />
+                            <Border DockPanel.Dock="Right" Margin="0,0,8,0" VerticalAlignment="Center" Style="{StaticResource SegmentedContainerStyle}">
+                                <UniformGrid Columns="2">
+                                    <RadioButton x:Name="WheelDownRadio" Content="{l:T WheelDown}" GroupName="WheelDirection" IsChecked="True" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="WheelUpRadio" Content="{l:T WheelUp}" GroupName="WheelDirection" Style="{StaticResource CompactSegmentStyle}" />
+                                </UniformGrid>
+                            </Border>
+                            <TextBlock Text="{l:T TurnTheWheel}" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
                         </DockPanel>
 
                         <Border Style="{StaticResource ListDividerStyle}" />
@@ -225,75 +250,89 @@
 
                         <Border Style="{StaticResource ListDividerStyle}" />
 
-                        <!-- Posición -->
-                        <DockPanel Style="{StaticResource ListRowStyle}">
-                            <Border DockPanel.Dock="Right" VerticalAlignment="Center" Style="{StaticResource SegmentedContainerStyle}">
-                                <UniformGrid Columns="3">
-                                    <RadioButton x:Name="CursorPositionRadio" Content="Cursor" GroupName="Position" IsChecked="True" Style="{StaticResource SegmentStyle}"
-                                                 ToolTip="{l:T CursorTip}" />
-                                    <RadioButton x:Name="FixedPositionRadio" Content="{l:T Fixed}" GroupName="Position" Style="{StaticResource SegmentStyle}"
-                                                 ToolTip="{l:T FixedTip}" />
-                                    <RadioButton x:Name="PointsPositionRadio" Content="{l:T Points}" GroupName="Position" Style="{StaticResource SegmentStyle}"
-                                                 Checked="PointsMode_Changed" Unchecked="PointsMode_Changed"
-                                                 ToolTip="{l:T PointsTip}" />
-                                </UniformGrid>
-                            </Border>
-                            <TextBlock Text="{l:T Position}" Style="{StaticResource RowTitleStyle}" />
-                        </DockPanel>
-                        <DockPanel Style="{StaticResource DetailRowStyle}"
-                                   Visibility="{Binding IsChecked, ElementName=FixedPositionRadio, Converter={StaticResource BoolToVis}}">
-                            <Button x:Name="PickButton" DockPanel.Dock="Right" Margin="8,0,0,0" Click="PickPosition_Click"
-                                    Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T PickTip}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE8B0;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center"
-                                               Foreground="{DynamicResource AccentBrush}" />
-                                    <TextBlock Text="{l:T Pick}" Margin="6,0,0,0" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-                            <TextBox x:Name="YBox" DockPanel.Dock="Right" Text="0" MaxLength="6" Width="62" Style="{StaticResource SmallFieldStyle}" />
-                            <TextBlock DockPanel.Dock="Right" Text="Y" Margin="10,0,6,0" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
-                            <TextBox x:Name="XBox" DockPanel.Dock="Right" Text="0" MaxLength="6" Width="62" Style="{StaticResource SmallFieldStyle}" />
-                            <TextBlock DockPanel.Dock="Right" Text="X" Margin="0,0,6,0" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
-                            <TextBlock />
-                        </DockPanel>
-                        <StackPanel Visibility="{Binding IsChecked, ElementName=PointsPositionRadio, Converter={StaticResource BoolToVis}}">
-                            <DockPanel Style="{StaticResource DetailRowStyle}">
-                                <Button x:Name="AddPointsButton" DockPanel.Dock="Right" Margin="6,0,0,0" Click="AddPoints_Click"
-                                        Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T AddTip}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="11" VerticalAlignment="Center"
-                                                   Foreground="{DynamicResource AccentBrush}" />
-                                        <TextBlock Text="{l:T Add}" Margin="6,0,0,0" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="RecordButton" DockPanel.Dock="Right" Margin="6,0,0,0" Click="RecordPoints_Click"
-                                        Style="{StaticResource SecondaryButtonStyle}"
-                                        ToolTip="{l:T RecordTip}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <Ellipse Width="8" Height="8" Fill="#E5484D" VerticalAlignment="Center" />
-                                        <TextBlock Text="{l:T Record}" Margin="6,0,0,0" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="ClearPointsButton" DockPanel.Dock="Right" Click="ClearPoints_Click" Padding="9,0" IsEnabled="False"
-                                        Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T ClearTip}">
-                                    <TextBlock Text="&#xE74D;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" />
-                                </Button>
-                                <TextBlock x:Name="PointsSummaryText" Text="{l:T NoPoints}" VerticalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis" Margin="0,0,8,0" Style="{StaticResource CaptionStyle}"
-                                           ToolTip="{l:T PointsHint}" />
-                            </DockPanel>
-                            <DockPanel Style="{StaticResource DetailRowStyle}">
-                                <Border DockPanel.Dock="Right" Style="{StaticResource SegmentedContainerStyle}">
-                                    <UniformGrid Columns="4">
-                                        <RadioButton x:Name="SpeedHalfRadio" Content="{l:T SpeedHalf}" GroupName="Speed" Style="{StaticResource CompactSegmentStyle}" />
-                                        <RadioButton x:Name="Speed1Radio" Content="×1" GroupName="Speed" IsChecked="True" Style="{StaticResource CompactSegmentStyle}" />
-                                        <RadioButton x:Name="Speed2Radio" Content="×2" GroupName="Speed" Style="{StaticResource CompactSegmentStyle}" />
-                                        <RadioButton x:Name="Speed4Radio" Content="×4" GroupName="Speed" Style="{StaticResource CompactSegmentStyle}" />
+                        <!-- Posición (no aplica a la acción Tecla: se atenúa) -->
+                        <StackPanel x:Name="PositionSection">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=KeyActionRadio}" Value="True">
+                                            <Setter Property="IsEnabled" Value="False" />
+                                            <Setter Property="Opacity" Value="0.4" />
+                                            <Setter Property="ToolTip" Value="{l:T PositionNotForKeys}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <!-- Posición -->
+                            <DockPanel Style="{StaticResource ListRowStyle}">
+                                <Border DockPanel.Dock="Right" VerticalAlignment="Center" Style="{StaticResource SegmentedContainerStyle}">
+                                    <UniformGrid Columns="3">
+                                        <RadioButton x:Name="CursorPositionRadio" Content="Cursor" GroupName="Position" IsChecked="True" Style="{StaticResource SegmentStyle}"
+                                                     ToolTip="{l:T CursorTip}" />
+                                        <RadioButton x:Name="FixedPositionRadio" Content="{l:T Fixed}" GroupName="Position" Style="{StaticResource SegmentStyle}"
+                                                     ToolTip="{l:T FixedTip}" />
+                                        <RadioButton x:Name="PointsPositionRadio" Content="{l:T Points}" GroupName="Position" Style="{StaticResource SegmentStyle}"
+                                                     Checked="PointsMode_Changed" Unchecked="PointsMode_Changed"
+                                                     ToolTip="{l:T PointsTip}" />
                                     </UniformGrid>
                                 </Border>
-                                <TextBlock Text="{l:T Speed}" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center"
-                                           ToolTip="{l:T SpeedTip}" />
+                                <TextBlock Text="{l:T Position}" Style="{StaticResource RowTitleStyle}" />
                             </DockPanel>
+                            <DockPanel Style="{StaticResource DetailRowStyle}"
+                                       Visibility="{Binding IsChecked, ElementName=FixedPositionRadio, Converter={StaticResource BoolToVis}}">
+                                <Button x:Name="PickButton" DockPanel.Dock="Right" Margin="8,0,0,0" Click="PickPosition_Click"
+                                        Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T PickTip}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="&#xE8B0;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource AccentBrush}" />
+                                        <TextBlock Text="{l:T Pick}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                                <TextBox x:Name="YBox" DockPanel.Dock="Right" Text="0" MaxLength="6" Width="62" Style="{StaticResource SmallFieldStyle}" />
+                                <TextBlock DockPanel.Dock="Right" Text="Y" Margin="10,0,6,0" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
+                                <TextBox x:Name="XBox" DockPanel.Dock="Right" Text="0" MaxLength="6" Width="62" Style="{StaticResource SmallFieldStyle}" />
+                                <TextBlock DockPanel.Dock="Right" Text="X" Margin="0,0,6,0" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
+                                <TextBlock />
+                            </DockPanel>
+                            <StackPanel Visibility="{Binding IsChecked, ElementName=PointsPositionRadio, Converter={StaticResource BoolToVis}}">
+                                <DockPanel Style="{StaticResource DetailRowStyle}">
+                                    <Button x:Name="AddPointsButton" DockPanel.Dock="Right" Margin="6,0,0,0" Click="AddPoints_Click"
+                                            Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T AddTip}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="11" VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource AccentBrush}" />
+                                            <TextBlock Text="{l:T Add}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="RecordButton" DockPanel.Dock="Right" Margin="6,0,0,0" Click="RecordPoints_Click"
+                                            Style="{StaticResource SecondaryButtonStyle}"
+                                            ToolTip="{l:T RecordTip}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="8" Height="8" Fill="#E5484D" VerticalAlignment="Center" />
+                                            <TextBlock Text="{l:T Record}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="ClearPointsButton" DockPanel.Dock="Right" Click="ClearPoints_Click" Padding="9,0" IsEnabled="False"
+                                            Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T ClearTip}">
+                                        <TextBlock Text="&#xE74D;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center" />
+                                    </Button>
+                                    <TextBlock x:Name="PointsSummaryText" Text="{l:T NoPoints}" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" Margin="0,0,8,0" Style="{StaticResource CaptionStyle}"
+                                               ToolTip="{l:T PointsHint}" />
+                                </DockPanel>
+                                <DockPanel Style="{StaticResource DetailRowStyle}">
+                                    <Border DockPanel.Dock="Right" Style="{StaticResource SegmentedContainerStyle}">
+                                        <UniformGrid Columns="4">
+                                            <RadioButton x:Name="SpeedHalfRadio" Content="{l:T SpeedHalf}" GroupName="Speed" Style="{StaticResource CompactSegmentStyle}" />
+                                            <RadioButton x:Name="Speed1Radio" Content="×1" GroupName="Speed" IsChecked="True" Style="{StaticResource CompactSegmentStyle}" />
+                                            <RadioButton x:Name="Speed2Radio" Content="×2" GroupName="Speed" Style="{StaticResource CompactSegmentStyle}" />
+                                            <RadioButton x:Name="Speed4Radio" Content="×4" GroupName="Speed" Style="{StaticResource CompactSegmentStyle}" />
+                                        </UniformGrid>
+                                    </Border>
+                                    <TextBlock Text="{l:T Speed}" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center"
+                                               ToolTip="{l:T SpeedTip}" />
+                                </DockPanel>
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -411,10 +450,17 @@
                                     <RadioButton x:Name="MacroSpeed1" Content="×1" GroupName="MacroSpeed" IsChecked="True" Style="{StaticResource CompactSegmentStyle}" />
                                     <RadioButton x:Name="MacroSpeed2" Content="×2" GroupName="MacroSpeed" Style="{StaticResource CompactSegmentStyle}" />
                                     <RadioButton x:Name="MacroSpeed4" Content="×4" GroupName="MacroSpeed" Style="{StaticResource CompactSegmentStyle}" />
-                                    <RadioButton x:Name="MacroSpeed10" Content="×10" GroupName="MacroSpeed" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="MacroSpeedCustom" Content="{l:T SpeedOther}" GroupName="MacroSpeed" Style="{StaticResource CompactSegmentStyle}" />
                                 </UniformGrid>
                             </Border>
                             <TextBlock Text="{l:T Speed}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                        <DockPanel Style="{StaticResource DetailRowStyle}"
+                                   Visibility="{Binding IsChecked, ElementName=MacroSpeedCustom, Converter={StaticResource BoolToVis}}">
+                            <TextBlock DockPanel.Dock="Right" Text="{l:T SpeedRange}" Style="{StaticResource UnitStyle}" />
+                            <TextBox x:Name="MacroSpeedBox" DockPanel.Dock="Right" Text="1,5" MaxLength="5" Style="{StaticResource SmallFieldStyle}" />
+                            <TextBlock DockPanel.Dock="Right" Text="×" Margin="0,0,6,0" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
+                            <TextBlock Text="{l:T SpeedFree}" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
                         </DockPanel>
                         <Border Style="{StaticResource ListDividerStyle}" />
 
@@ -479,6 +525,26 @@
 
                 <Border Style="{StaticResource ListCardStyle}">
                     <StackPanel>
+                        <!-- Acción: clic en el punto o una tecla (p. ej. Espacio para saltar en Roblox) -->
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <Border DockPanel.Dock="Right" VerticalAlignment="Center" Style="{StaticResource SegmentedContainerStyle}">
+                                <UniformGrid Columns="2">
+                                    <RadioButton x:Name="AfkClickRadio" Content="{l:T AfkActionClick}" GroupName="AfkAction" IsChecked="True"
+                                                 Style="{StaticResource CompactSegmentStyle}" Checked="AfkAction_Changed" />
+                                    <RadioButton x:Name="AfkKeyRadio" Content="{l:T KeyAction}" GroupName="AfkAction"
+                                                 Style="{StaticResource CompactSegmentStyle}" Checked="AfkAction_Changed" />
+                                </UniformGrid>
+                            </Border>
+                            <TextBlock Text="{l:T Action}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                        <DockPanel Style="{StaticResource DetailRowStyle}"
+                                   Visibility="{Binding IsChecked, ElementName=AfkKeyRadio, Converter={StaticResource BoolToVis}}">
+                            <ToggleButton x:Name="AfkKeyButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                          Content="Espacio" Style="{StaticResource KeyCapStyle}" ToolTip="{l:T ActionKeyTip}"
+                                          Checked="AnyHotkeyButton_Checked" Unchecked="AnyHotkeyButton_Unchecked" />
+                            <TextBlock Text="{l:T AfkPressInWindow}" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
                         <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
                             <Button x:Name="AfkPickButton" DockPanel.Dock="Right" VerticalAlignment="Center"
                                     Click="AfkPick_Click" Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T AfkPickTip}">
@@ -489,7 +555,7 @@
                                 </StackPanel>
                             </Button>
                             <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                                <TextBlock Text="{l:T AfkTarget}" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock x:Name="AfkTargetTitle" Text="{l:T AfkTarget}" Style="{StaticResource RowTitleStyle}" />
                                 <TextBlock x:Name="AfkTargetText" Text="{l:T AfkNoTarget}" TextTrimming="CharacterEllipsis"
                                            Style="{StaticResource RowHintStyle}" />
                             </StackPanel>
@@ -511,7 +577,7 @@
                                     Click="AfkTest_Click" Style="{StaticResource SecondaryButtonStyle}" Content="{l:T AfkTestNow}" />
                             <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                                 <TextBlock Text="{l:T AfkTest}" Style="{StaticResource RowTitleStyle}" />
-                                <TextBlock Text="{l:T AfkTestHint}" Style="{StaticResource RowHintStyle}" />
+                                <TextBlock x:Name="AfkTestHintText" Text="{l:T AfkTestHint}" Style="{StaticResource RowHintStyle}" />
                             </StackPanel>
                         </DockPanel>
                     </StackPanel>
@@ -649,6 +715,12 @@
                                       Checked="StartWithWindows_Changed" Unchecked="StartWithWindows_Changed" />
                             <TextBlock Text="{l:T StartWithWindows}" Style="{StaticResource RowTitleStyle}"
                                        ToolTip="{l:T StartWithWindowsTip}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <CheckBox x:Name="HudSwitch" DockPanel.Dock="Right" VerticalAlignment="Center" IsChecked="True"
+                                      Style="{StaticResource ToggleSwitchStyle}" />
+                            <TextBlock Text="{l:T HudSetting}" Style="{StaticResource RowTitleStyle}" ToolTip="{l:T HudSettingTip}" />
                         </DockPanel>
                         <Border Style="{StaticResource ListDividerStyle}" />
                         <DockPanel Style="{StaticResource ListRowStyle}">

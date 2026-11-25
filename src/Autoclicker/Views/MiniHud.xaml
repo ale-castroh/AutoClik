@@ -1,0 +1,38 @@
+<Window x:Class="Autoclicker.Views.MiniHud"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:Autoclicker.Localization"
+        Title="AutoClik mini"
+        SizeToContent="WidthAndHeight" Left="-32000" Top="-32000"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False" ShowActivated="False"
+        FontFamily="{StaticResource UiFont}" FontSize="12.5"
+        Foreground="{DynamicResource TextPrimaryBrush}">
+
+    <!-- Mini ventana mientras AutoClik está oculto: estado, contador y Detener (o la pista con macros) -->
+    <Border x:Name="Pill" Margin="10" Padding="12,6,6,6" CornerRadius="18" BorderThickness="1" Cursor="SizeAll"
+            Background="{DynamicResource ToolTipBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}"
+            ToolTip="{l:T HudTip}">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="14" ShadowDepth="2" Opacity="0.28" Color="Black" />
+        </Border.Effect>
+
+        <StackPanel Orientation="Horizontal">
+            <Ellipse Width="7" Height="7" Fill="{DynamicResource SuccessBrush}" VerticalAlignment="Center" />
+            <TextBlock x:Name="TitleText" Text="" Margin="8,0,0,0" VerticalAlignment="Center" MaxWidth="160"
+                       TextTrimming="CharacterEllipsis" />
+            <TextBlock x:Name="NumberText" Text="" Margin="10,0,0,0" VerticalAlignment="Center"
+                       FontFamily="{StaticResource NumberFont}" FontSize="15" />
+            <TextBlock x:Name="HintText" Text="" Margin="10,0,6,0" VerticalAlignment="Center"
+                       Style="{StaticResource CaptionStyle}" Visibility="Collapsed" />
+            <Button x:Name="StopButton" Margin="10,0,0,0" Height="26" Padding="10,0" Click="Stop_Click" Cursor="Hand"
+                    Style="{StaticResource SecondaryButtonStyle}">
+                <StackPanel Orientation="Horizontal">
+                    <Rectangle Width="8" Height="8" RadiusX="2" RadiusY="2" VerticalAlignment="Center"
+                               Fill="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock x:Name="StopText" Text="{l:T StopBtn}" Margin="7,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Border>
+</Window>

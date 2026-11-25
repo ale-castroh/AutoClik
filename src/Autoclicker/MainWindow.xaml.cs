@@ -36,7 +36,9 @@ public partial class MainWindow : Window
     private nint _hwnd;
 
     private bool _themeRefreshQueued;
-    private ToggleButton? _captureButton; // atajo que se está eligiendo ("Pulsa una tecla…")
+    private ToggleButton? _captureButton; // atajo o tecla que se está eligiendo ("Pulsa una tecla…")
+    private int _actionKeyVk = 0x45;      // acción Tecla de Clics (E)
+    private int _afkKeyVk = 0x20;         // acción Tecla del anti-AFK (Espacio)
     private bool _capturingHotkey => _captureButton != null;
     private bool _exiting;
     private string? _hotkeyError;
@@ -94,12 +96,13 @@ public partial class MainWindow : Window
 
         InitPersistence();
         InitMacros();
+        InitHud();
     }
 
     private IEnumerable<TextBox> NumberBoxes() =>
     [
         IntervalBox, HoldBox, RepeatCountBox, DurationBox, XBox, YBox, OffsetBox, JitterBox, DelayBox, AfkMinutesBox,
-        MacroCountBox, MacroMinutesBox,
+        MacroCountBox, MacroMinutesBox, WheelStepsBox,
     ];
 
     // ================= Secciones (barra lateral) =================
@@ -208,6 +211,8 @@ public partial class MainWindow : Window
         var playKey = new Hotkey(_data.Prefs.MacroPlayVk, _data.Prefs.MacroPlayModifiers);
         if (!_playHotkeys.TrySet(playKey)) _hotkeyError ??= Strings.F("HotkeyTakenPick", playKey);
 
+        RebuildMacroHotkeys();
+
         _tray = new TrayIcon(_hwnd);
         _tray.LeftClick += ToggleWindowFromTray;
         _tray.RightClick += ShowTrayMenu;
@@ -240,6 +245,7 @@ public partial class MainWindow : Window
         _markers.Changed -= UpdatePointsSummary;
         _markers.Clear();
         DisposeMacros();
+        CloseHud();
         _hotkeys?.Dispose();
         _recordHotkeys?.Dispose();
         _playHotkeys?.Dispose();
@@ -273,7 +279,8 @@ public partial class MainWindow : Window
         }
 
         if (_hotkeys?.HandleMessage(msg, wParam) == true || _recordHotkeys?.HandleMessage(msg, wParam) == true
-            || _playHotkeys?.HandleMessage(msg, wParam) == true || _tray?.HandleMessage(msg, lParam) == true)
+            || _playHotkeys?.HandleMessage(msg, wParam) == true || HandleMacroHotkeyMessage(msg, wParam)
+            || _tray?.HandleMessage(msg, lParam) == true)
         {
             handled = true;
             return 0;
@@ -428,7 +435,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (PointsPositionRadio.IsChecked == true && _markers.Count == 0)
+        if (PointsPositionRadio.IsChecked == true && _markers.Count == 0 && SelectedAction != ClickAction.Key)
         {
             _notice = Strings.T("NeedPoint");
             Dispatcher.InvokeAsync(() => StartButton.IsChecked = false);
@@ -485,6 +492,11 @@ public partial class MainWindow : Window
         StartButton.IsChecked = false;
     }
 
+    private ClickAction SelectedAction =>
+        KeyActionRadio.IsChecked == true ? ClickAction.Key
+        : WheelActionRadio.IsChecked == true ? ClickAction.Wheel
+        : ClickAction.Mouse;
+
     private ClickSettings ReadSettings()
     {
         long unitMs = UnitHRadio.IsChecked == true ? 3_600_000
@@ -500,6 +512,9 @@ public partial class MainWindow : Window
             Button = RightButtonRadio.IsChecked == true ? MouseButtonKind.Right
                    : MiddleButtonRadio.IsChecked == true ? MouseButtonKind.Middle
                    : MouseButtonKind.Left,
+            Action = SelectedAction,
+            KeyVk = _actionKeyVk,
+            WheelDelta = (WheelUpRadio.IsChecked == true ? 120 : -120) * (int)Compat.Clamp(Number(WheelStepsBox), 1, 20),
             Kind = DoubleKindRadio.IsChecked == true ? ClickKind.Double
                  : HoldKindRadio.IsChecked == true ? ClickKind.Hold
                  : ClickKind.Single,
@@ -507,8 +522,9 @@ public partial class MainWindow : Window
             RepeatCount = RepeatCountRadio.IsChecked == true ? (int)Compat.Clamp(Number(RepeatCountBox), 1, int.MaxValue) : 0,
             TimeLimit = RepeatTimeRadio.IsChecked == true ? TimeSpan.FromSeconds(Math.Max(Number(DurationBox), 1)) : TimeSpan.Zero,
             StartDelay = TimeSpan.FromSeconds(Number(DelayBox)),
-            UseFixedPosition = FixedPositionRadio.IsChecked == true,
-            Points = PointsPositionRadio.IsChecked == true ? _markers.Snapshot() : null,
+            // La acción Tecla no usa posición: va a la ventana activa
+            UseFixedPosition = SelectedAction != ClickAction.Key && FixedPositionRadio.IsChecked == true,
+            Points = SelectedAction != ClickAction.Key && PointsPositionRadio.IsChecked == true ? _markers.Snapshot() : null,
             Speed = PointsPositionRadio.IsChecked == true ? SelectedSpeed : 1,
             X = (int)Number(XBox),
             Y = (int)Number(YBox),
@@ -596,7 +612,8 @@ public partial class MainWindow : Window
     }
 
     private HotkeyManager? ManagerFor(ToggleButton? button) =>
-        button == RecordHotkeyButton ? _recordHotkeys : button == PlayHotkeyButton ? _playHotkeys : _hotkeys;
+        button == RecordHotkeyButton ? _recordHotkeys : button == PlayHotkeyButton ? _playHotkeys
+        : IsActionKeyButton(button) ? null : _hotkeys;
 
     private IEnumerable<HotkeyManager> AllHotkeys =>
         new[] { _hotkeys, _recordHotkeys, _playHotkeys }.Where(h => h != null)!;
@@ -607,8 +624,10 @@ public partial class MainWindow : Window
         foreach (var h in AllHotkeys) h.Suspended = true; // que ningún atajo salte mientras eliges
         button.IsChecked = true;
         button.Content = Strings.T("PressKey");
-        HotkeyNoteText.Text = Strings.T("PressKeyHint");
+        if (!IsActionKeyButton(button)) HotkeyNoteText.Text = Strings.T("PressKeyHint");
     }
+
+    private bool IsActionKeyButton(ToggleButton? button) => button == ActionKeyButton || button == AfkKeyButton;
 
     private void EndHotkeyCapture(Hotkey? chosen)
     {
@@ -617,6 +636,23 @@ public partial class MainWindow : Window
         _captureButton = null;
         if (button != null) button.IsChecked = false;
         foreach (var h in AllHotkeys) h.Suspended = false;
+
+        // Tecla de una acción (no un atajo): solo la tecla, sin modificadores; botones del ratón no valen.
+        if (IsActionKeyButton(button))
+        {
+            if (chosen is { IsMouse: false } key)
+            {
+                if (button == ActionKeyButton) _actionKeyVk = key.VirtualKey;
+                else
+                {
+                    _afkKeyVk = key.VirtualKey;
+                    _antiAfk.SetKey(_afkKeyVk);
+                }
+            }
+            RefreshHotkeyUi();
+            ScheduleSave();
+            return;
+        }
         if (manager == null) return;
 
         if (chosen is { } hotkey && hotkey != manager.Current)
@@ -641,6 +677,8 @@ public partial class MainWindow : Window
     private void RefreshHotkeyUi()
     {
         HotkeyButton.Content = _hotkeys?.Current.ToString() ?? "F6";
+        ActionKeyButton.Content = Hotkey.KeyName(_actionKeyVk);
+        AfkKeyButton.Content = Hotkey.KeyName(_afkKeyVk);
         RecordHotkeyButton.Content = _recordHotkeys?.Current.ToString() ?? "F7";
         PlayHotkeyButton.Content = _playHotkeys?.Current.ToString() ?? "F8";
         Theme.Ui.SetKeyText(RecordMacroButton, RecordHotkeyButton.Content.ToString()!);
@@ -724,6 +762,13 @@ public partial class MainWindow : Window
 
     private void AfkTest_Click(object sender, RoutedEventArgs e) => _antiAfk.PulseNow();
 
+    private void AfkAction_Changed(object sender, RoutedEventArgs e)
+    {
+        if (AfkKeyRadio == null) return; // aún cargando la ventana ("Clic" llega marcado antes de existir "Tecla")
+        _antiAfk.SetUseKey(AfkKeyRadio.IsChecked == true);
+        RefreshAfkTarget();
+    }
+
     /// <summary>
     /// Funciones experimentales: la barra muestra u oculta el Anti-AFK (por enlace en el XAML).
     /// Al apagarlas se detiene el anti-AFK y, si estabas en su sección, se vuelve a Clics.
@@ -798,11 +843,15 @@ public partial class MainWindow : Window
         return text.ToString().Trim();
     }
 
+    /// <summary>Con la acción Tecla no hay punto: los textos hablan solo de la ventana y de la tecla.</summary>
     private void RefreshAfkTarget()
     {
-        AfkTargetText.Text = _antiAfk.IsConfigured
-            ? Strings.F("AfkTargetValue", _antiAfk.DisplayName ?? "", _antiAfk.X, _antiAfk.Y)
-            : Strings.T("AfkNoTarget");
+        bool key = AfkKeyRadio?.IsChecked == true;
+        AfkTargetTitle.Text = Strings.T(key ? "AfkTargetWindow" : "AfkTarget");
+        AfkTestHintText.Text = Strings.T(key ? "AfkTestHintKey" : "AfkTestHint");
+        AfkTargetText.Text = !_antiAfk.IsConfigured ? Strings.T("AfkNoTarget")
+            : key ? _antiAfk.DisplayName ?? ""
+            : Strings.F("AfkTargetValue", _antiAfk.DisplayName ?? "", _antiAfk.X, _antiAfk.Y);
         AfkTargetText.ToolTip = _antiAfk.ProcessName;
     }
 
