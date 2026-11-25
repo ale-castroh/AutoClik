@@ -3,3 +3,6 @@ bin/
 obj/
 .vs/
 *.user
+
+# Contexto para Claude Code: solo en este PC, no se sube a GitHub
+CLAUDE.md
