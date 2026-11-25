@@ -25,6 +25,8 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _statusTimer;
     private readonly Queue<(long Time, long Count)> _rateSamples = new();
     private readonly MarkerManager _markers = new();
+    private readonly AntiAfk _antiAfk = new();
+    private bool _picking; // eligiendo un punto en pantalla (ventana oculta)
     private string? _notice; // aviso puntual en el estado (p. ej. "Añade al menos un punto")
 
     private HotkeyManager? _hotkeys;
@@ -74,12 +76,17 @@ public partial class MainWindow : Window
         }
 
         EmergencyCornerWatcher.Triggered += OnEmergencyCorner;
+
+        // El anti-AFK espera mientras se clica, se graba o se elige un punto.
+        _antiAfk.ShouldWait = () => StartButton.IsChecked == true || _recording || _picking;
+        _antiAfk.StatusChanged += () => AntiAfkStatusText.Text = _antiAfk.Status;
+
         InitPersistence();
     }
 
     private IEnumerable<TextBox> NumberBoxes() =>
     [
-        IntervalBox, HoldBox, RepeatCountBox, DurationBox, XBox, YBox, OffsetBox, JitterBox, DelayBox,
+        IntervalBox, HoldBox, RepeatCountBox, DurationBox, XBox, YBox, OffsetBox, JitterBox, DelayBox, AfkMinutesBox,
     ];
 
     // ================= Páginas (principal / ajustes) =================
@@ -94,6 +101,9 @@ public partial class MainWindow : Window
         FrameworkElement incoming = show ? SettingsPage : MainPage;
         FrameworkElement outgoing = show ? MainPage : SettingsPage;
         if (incoming.Visibility == Visibility.Visible) return;
+
+        // Ajustes ocupa como mucho lo mismo que la página principal; si no cabe, se desplaza.
+        if (show) SettingsScroll.MaxHeight = Math.Max(MainPage.ActualHeight, 400);
 
         outgoing.Visibility = Visibility.Collapsed;
         incoming.Visibility = Visibility.Visible;
@@ -156,6 +166,7 @@ public partial class MainWindow : Window
         if (_recording) ClickRecorder.Stop();
         _recordingBar?.Close();
         _engine.Dispose();
+        _antiAfk.Enabled = false;
         EmergencyCornerWatcher.Stop();
         EmergencyCornerWatcher.Triggered -= OnEmergencyCorner;
         _markers.Changed -= UpdatePointsSummary;
@@ -575,7 +586,9 @@ public partial class MainWindow : Window
     {
         // Se oculta la ventana para poder elegir un punto que esté debajo de ella.
         Hide();
+        _picking = true;
         var point = PositionPicker.Pick(null);
+        _picking = false;
         ShowFromTray();
 
         if (point is { } p)
@@ -583,6 +596,60 @@ public partial class MainWindow : Window
             XBox.Text = p.X.ToString();
             YBox.Text = p.Y.ToString();
         }
+    }
+
+    // ================= Anti-AFK (experimental) =================
+
+    private void AntiAfk_Changed(object sender, RoutedEventArgs e) => _antiAfk.Enabled = AntiAfkSwitch.IsChecked == true;
+
+    private void AfkMinutes_Changed(object sender, TextChangedEventArgs e) => _antiAfk.SetMinutes((int)Number(AfkMinutesBox));
+
+    /// <summary>Elegir la ventana y el punto de clic del anti-AFK con la cruz.</summary>
+    private void AfkPick_Click(object sender, RoutedEventArgs e)
+    {
+        Hide();
+        _picking = true;
+        var picked = PositionPicker.Pick(null);
+        _picking = false;
+        ShowFromTray();
+        if (picked is not { } screen) return;
+
+        var pt = new POINT { X = screen.X, Y = screen.Y };
+        nint hwnd = GetAncestor(WindowFromPoint(pt), GA_ROOT);
+        if (hwnd == 0) return;
+        GetWindowThreadProcessId(hwnd, out uint pid);
+        if (pid == (uint)Compat.ProcessId) return; // no tiene sentido sobre la propia app
+
+        string processName;
+        try
+        {
+            using var process = Process.GetProcessById((int)pid);
+            processName = process.ProcessName;
+        }
+        catch (ArgumentException)
+        {
+            return; // el programa se cerró mientras tanto
+        }
+
+        ScreenToClient(hwnd, ref pt);
+        _antiAfk.SetTarget(processName, WindowTitle(hwnd), pt.X, pt.Y);
+        RefreshAfkTarget();
+        ScheduleSave();
+    }
+
+    private static string WindowTitle(nint hwnd)
+    {
+        var text = new System.Text.StringBuilder(256);
+        GetWindowTextW(hwnd, text, text.Capacity);
+        return text.ToString().Trim();
+    }
+
+    private void RefreshAfkTarget()
+    {
+        AfkTargetText.Text = _antiAfk.IsConfigured
+            ? Strings.F("AfkTargetValue", _antiAfk.DisplayName ?? "", _antiAfk.X, _antiAfk.Y)
+            : Strings.T("AfkNoTarget");
+        AfkTargetText.ToolTip = _antiAfk.ProcessName;
     }
 
     // ================= Multi-punto =================
@@ -599,7 +666,9 @@ public partial class MainWindow : Window
     {
         // Se oculta la ventana para poder marcar puntos que estén debajo de ella.
         Hide();
+        _picking = true;
         PositionPicker.PickMany((x, y) => _markers.Add(x, y));
+        _picking = false;
         ShowFromTray();
         _markers.BringToFront();
     }

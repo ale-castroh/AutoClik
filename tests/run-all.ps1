@@ -44,7 +44,8 @@ $ui = @(
     @{ Name = 'Pausar si cambia la ventana'; File = 'ventana.ps1' },
     @{ Name = 'Grabadora'; File = 'grabadora.ps1' },
     @{ Name = 'Una sola copia abierta'; File = 'instancia.ps1' },
-    @{ Name = 'Arrastres, cursor, inicio con Windows'; File = 'extras.ps1' }
+    @{ Name = 'Arrastres, cursor, inicio con Windows'; File = 'extras.ps1' },
+    @{ Name = 'Anti-AFK (experimental)'; File = 'antiafk.ps1' }
 )
 foreach ($t in $ui) {
     Write-Host "`n== $($t.Name)" -ForegroundColor Cyan

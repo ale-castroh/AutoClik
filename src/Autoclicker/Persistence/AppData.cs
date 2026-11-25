@@ -61,6 +61,14 @@ public sealed class GlobalPrefs
     public double? WindowLeft { get; set; }
     public double? WindowTop { get; set; }
 
+    // Anti-AFK (experimental): ventana por nombre de proceso y punto en coordenadas de cliente.
+    public bool AntiAfkEnabled { get; set; }
+    public int AntiAfkMinutes { get; set; } = 15;
+    public string? AntiAfkProcess { get; set; }
+    public string? AntiAfkTitle { get; set; }
+    public int AntiAfkX { get; set; }
+    public int AntiAfkY { get; set; }
+
     internal Dictionary<string, object?> ToJson() => new()
     {
         ["HotkeyVk"] = HotkeyVk,
@@ -72,6 +80,12 @@ public sealed class GlobalPrefs
         ["Pinned"] = Pinned,
         ["WindowLeft"] = WindowLeft,
         ["WindowTop"] = WindowTop,
+        ["AntiAfkEnabled"] = AntiAfkEnabled,
+        ["AntiAfkMinutes"] = AntiAfkMinutes,
+        ["AntiAfkProcess"] = AntiAfkProcess,
+        ["AntiAfkTitle"] = AntiAfkTitle,
+        ["AntiAfkX"] = AntiAfkX,
+        ["AntiAfkY"] = AntiAfkY,
     };
 
     internal static GlobalPrefs FromJson(JsonObj j)
@@ -88,6 +102,12 @@ public sealed class GlobalPrefs
             Pinned = j.Bool("Pinned", d.Pinned),
             WindowLeft = j.NumOrNull("WindowLeft"),
             WindowTop = j.NumOrNull("WindowTop"),
+            AntiAfkEnabled = j.Bool("AntiAfkEnabled", false),
+            AntiAfkMinutes = j.Int("AntiAfkMinutes", d.AntiAfkMinutes),
+            AntiAfkProcess = j.Str("AntiAfkProcess"),
+            AntiAfkTitle = j.Str("AntiAfkTitle"),
+            AntiAfkX = j.Int("AntiAfkX", 0),
+            AntiAfkY = j.Int("AntiAfkY", 0),
         };
     }
 }

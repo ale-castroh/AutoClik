@@ -102,6 +102,20 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 1.4.0 — Anti-AFK experimental (sin publicar)
+- **Ajustes → Experimental → Anti-AFK** (`Input/AntiAfk.cs`): cada 1–18 min (15 por defecto) trae al
+  frente la ventana elegida, hace UN clic real en el punto elegido y devuelve la ventana activa y el
+  cursor (~150 ms; `AttachThreadInput` + `SetForegroundWindow`, clic con pausas de 15/25 ms porque
+  algunos juegos necesitan ver el ratón encima antes de pulsar). Si estaba minimizada, la restaura y la
+  vuelve a minimizar.
+- No hace nada si ya estás en esa ventana; espera a 1,5 s sin teclado/ratón (máx. 60 s) para no robar
+  teclas; se pospone mientras el autoclicker clica, se graba o se elige un punto.
+- La ventana se recuerda por nombre de proceso (+ título para mostrar) y el punto en coordenadas de
+  cliente; se busca la ventana visible más grande del proceso. Ajustes globales (no por perfil).
+- Probado con Roblox real mediante script: el clic llega, se vuelve a la ventana y el cursor queda igual.
+- **Ajustes ahora tiene scroll** (máximo la altura de la página principal); la principal sigue sin él.
+- Pruebas: nueva `tests/ui/antiafk.ps1` (la diana hace de juego; `--antiafk-seconds=N` solo pruebas).
+
 ## Versión 1.3.0 — Mejoras ✅
 - **Registro de errores**: los errores inesperados van a `%AppData%\AutoClik\error.log` (máx. ~256 KB,
   luego `error.old.log`). Un error de la interfaz ya no cierra la app: se avisa una vez y sigue abierta.

@@ -217,4 +217,56 @@ internal static partial class NativeMethods
 
     public static void SetDwmInt(nint hwnd, int attribute, int value)
         => DwmSetWindowAttribute(hwnd, attribute, ref value, sizeof(int));
+
+    // ---- Anti-AFK: activar otra ventana un instante y volver ----
+
+    public const int SW_MINIMIZE = 6;
+    public const int SW_RESTORE = 9;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct LASTINPUTINFO { public uint cbSize; public uint dwTime; }
+
+    public delegate bool EnumWindowsProc(nint hwnd, nint lParam);
+
+    [DllImport("user32.dll")]
+    public static extern nint GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    public static extern int BringWindowToTop(nint hwnd);
+
+    [DllImport("user32.dll")]
+    public static extern int ShowWindow(nint hwnd, int command);
+
+    [DllImport("user32.dll")]
+    public static extern int IsIconic(nint hwnd);
+
+    [DllImport("user32.dll")]
+    public static extern int IsWindowVisible(nint hwnd);
+
+    [DllImport("user32.dll")]
+    public static extern int IsWindow(nint hwnd);
+
+    [DllImport("user32.dll")]
+    public static extern int EnumWindows(EnumWindowsProc callback, nint lParam);
+
+    [DllImport("user32.dll")]
+    public static extern int AttachThreadInput(uint attach, uint attachTo, int doAttach);
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetCurrentThreadId();
+
+    [DllImport("kernel32.dll")]
+    public static extern uint GetTickCount();
+
+    [DllImport("user32.dll")]
+    public static extern int GetLastInputInfo(ref LASTINPUTINFO info);
+
+    [DllImport("user32.dll")]
+    public static extern int ClientToScreen(nint hwnd, ref POINT point);
+
+    [DllImport("user32.dll")]
+    public static extern int ScreenToClient(nint hwnd, ref POINT point);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetWindowTextW(nint hwnd, System.Text.StringBuilder text, int maxCount);
 }

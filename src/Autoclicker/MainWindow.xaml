@@ -267,6 +267,8 @@
             </StackPanel>
 
             <!-- ================= Página de ajustes ================= -->
+            <!-- Ajustes: con scroll si no cabe (la página principal nunca lo tiene) -->
+            <ScrollViewer x:Name="SettingsScroll" Style="{StaticResource ThinScrollViewerStyle}" Focusable="False">
             <StackPanel x:Name="SettingsPage" Margin="16,0,16,16" Visibility="Collapsed">
                 <StackPanel.RenderTransform>
                     <TranslateTransform />
@@ -378,7 +380,53 @@
                         </DockPanel>
                     </StackPanel>
                 </Border>
+
+                <!-- Experimental -->
+                <TextBlock Text="{l:T Experimental}" Style="{StaticResource GroupLabelStyle}" />
+                <Border Style="{StaticResource ListCardStyle}">
+                    <StackPanel>
+                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                            <CheckBox x:Name="AntiAfkSwitch" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                      Style="{StaticResource ToggleSwitchStyle}"
+                                      Checked="AntiAfk_Changed" Unchecked="AntiAfk_Changed" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{l:T AntiAfk}" Style="{StaticResource RowTitleStyle}"
+                                           ToolTip="{l:T AntiAfkTip}" />
+                                <TextBlock x:Name="AntiAfkStatusText" Text="{l:T AfkOffHint}" TextWrapping="Wrap"
+                                           Style="{StaticResource RowHintStyle}" />
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                            <Button x:Name="AfkPickButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                    Click="AfkPick_Click" Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T AfkPickTip}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8B0;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center"
+                                               Margin="0,0,6,0" />
+                                    <TextBlock Text="{l:T Pick}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{l:T AfkTarget}" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock x:Name="AfkTargetText" Text="{l:T AfkNoTarget}" TextTrimming="CharacterEllipsis"
+                                           Style="{StaticResource RowHintStyle}" />
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                            <TextBlock DockPanel.Dock="Right" Text="min" Style="{StaticResource UnitStyle}" />
+                            <TextBox x:Name="AfkMinutesBox" DockPanel.Dock="Right" Text="15" MaxLength="2" VerticalAlignment="Center"
+                                     Style="{StaticResource SmallFieldStyle}" TextChanged="AfkMinutes_Changed" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{l:T AfkEvery}" Style="{StaticResource RowTitleStyle}"
+                                           ToolTip="{l:T AfkEveryTip}" />
+                                <TextBlock Text="{l:T AfkEveryHint}" Style="{StaticResource RowHintStyle}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
             </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>

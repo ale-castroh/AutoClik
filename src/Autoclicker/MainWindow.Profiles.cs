@@ -76,6 +76,13 @@ public partial class MainWindow
         PinButton.IsChecked = p.Pinned;
         (p.HotkeyHoldMode ? HoldModeRadio : ToggleModeRadio).IsChecked = true;
 
+        // Anti-AFK: primero la ventana y los minutos, luego el interruptor (que lo arranca).
+        _antiAfk.SetTarget(p.AntiAfkProcess, p.AntiAfkTitle, p.AntiAfkX, p.AntiAfkY);
+        AfkMinutesBox.Text = Compat.Clamp(p.AntiAfkMinutes, 1, 18).ToString();
+        _antiAfk.SetMinutes(p.AntiAfkMinutes);
+        RefreshAfkTarget();
+        AntiAfkSwitch.IsChecked = p.AntiAfkEnabled;
+
         // "Iniciar con Windows" no va en settings.json: lo que manda es el registro.
         _syncingAutostart = true;
         StartWithWindowsSwitch.IsChecked = Interop.Autostart.IsEnabled;
@@ -105,6 +112,12 @@ public partial class MainWindow
         Pinned = PinButton.IsChecked == true,
         WindowLeft = double.IsNaN(Left) ? _data.Prefs.WindowLeft : Left,
         WindowTop = double.IsNaN(Top) ? _data.Prefs.WindowTop : Top,
+        AntiAfkEnabled = AntiAfkSwitch.IsChecked == true,
+        AntiAfkMinutes = (int)Compat.Clamp(Number(AfkMinutesBox), 1, 18),
+        AntiAfkProcess = _antiAfk.ProcessName,
+        AntiAfkTitle = _antiAfk.DisplayName,
+        AntiAfkX = _antiAfk.X,
+        AntiAfkY = _antiAfk.Y,
     };
 
     private bool _syncingAutostart;

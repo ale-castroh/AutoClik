@@ -34,6 +34,7 @@ a donde quieras y volver para pulsar **Detener**.
 | **⚙ Ajustes → Atajo** | Clic en la tecla y pulsa otra (teclas, combinaciones o botones laterales del ratón). Modo *Alternar* o *Mantener* |
 | **⚙ Ajustes → Clics** | Variación aleatoria del intervalo, desvío del punto fijo, retardo de inicio, pausar si cambia la ventana activa, devolver el ratón a su sitio tras cada clic (posición fija o puntos) |
 | **⚙ Ajustes → General** | Parar al llevar el ratón a una esquina, minimizar/cerrar a la bandeja, iniciar con Windows (oculto en la bandeja) |
+| **⚙ Ajustes → Experimental → Anti-AFK** | Cada X minutos (1–18) trae al frente la ventana elegida (p. ej. Roblox) un instante, hace un clic en el punto elegido y te devuelve a tu ventana con el ratón donde estaba. Espera a que dejes de usar el PC para no robarte teclas |
 | **📌** (barra de título) | Mantener la ventana siempre visible |
 
 ### Seguridad

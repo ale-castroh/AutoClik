@@ -29,6 +29,12 @@ public partial class App : Application
             {
                 Input.ClickRecorder.AcceptInjected = true;
             }
+            // --antiafk-seconds=N: el anti-AFK cuenta en segundos (solo pruebas automáticas).
+            else if (arg.StartsWith("--antiafk-seconds=", StringComparison.OrdinalIgnoreCase)
+                     && int.TryParse(arg.Substring("--antiafk-seconds=".Length), out int seconds))
+            {
+                Input.AntiAfk.TestIntervalSeconds = seconds;
+            }
             // --data=<carpeta> guarda la configuración en otra carpeta (pruebas).
             else if (arg.StartsWith("--data=", StringComparison.OrdinalIgnoreCase))
             {
