@@ -102,6 +102,12 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 1.2.1 — Correcciones ✅
+- Multi-punto con "Solo en una ventana": la secuencia ya no avanza mientras está en pausa; al volver
+  sigue por el mismo punto (antes se saltaba puntos).
+- Las casillas X/Y aceptan coordenadas negativas (monitores a la izquierda o encima del principal).
+- Pruebas: batería completa pasa. Sin prueba automática específica para estos dos casos.
+
 ## Versión 1.2.0 — AutoClik ligero ✅
 - Pasa a **.NET Framework 4.8** (incluido en Windows 10 1903+ y 11): `dist\AutoClik.exe` de **~195 KB**
   (antes 61 MB), abre en ~0,5 s siempre (antes ~4 s la primera vez). Memoria física ~80 MB visible
