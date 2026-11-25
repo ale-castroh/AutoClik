@@ -102,7 +102,7 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
-## Versión 1.3.0 — Mejoras (sin publicar)
+## Versión 1.3.0 — Mejoras ✅
 - **Registro de errores**: los errores inesperados van a `%AppData%\AutoClik\error.log` (máx. ~256 KB,
   luego `error.old.log`). Un error de la interfaz ya no cierra la app: se avisa una vez y sigue abierta.
   Los errores del motor se registran con su causa (`ClickEngine.LastError`).
