@@ -118,9 +118,14 @@ public sealed class ClickEngine : IDisposable
                 }
 
                 ClickSettings current = steps[index];
-                index = (index + 1) % steps.Length;
 
-                if (DoClick(current, random, timer, handles, freq, spinTicks))
+                // En pausa (la ventana activa no es la fijada) la secuencia no avanza: al volver
+                // se sigue por el mismo punto. Un clic omitido por caer sobre esta app sí avanza
+                // (si no, un punto tapado por la ventana bloquearía la secuencia).
+                bool paused = current.LockToForegroundWindow && !ForegroundAllowed();
+                if (!paused) index = (index + 1) % steps.Length;
+
+                if (!paused && DoClick(current, random, timer, handles, freq, spinTicks))
                 {
                     long count = Interlocked.Increment(ref _clickCount);
                     if (clickLimit > 0 && count >= clickLimit)
@@ -191,7 +196,6 @@ public sealed class ClickEngine : IDisposable
 
     private bool DoClick(ClickSettings s, Random random, HighResTimer timer, WaitHandle[] handles, long freq, long spinTicks)
     {
-        if (s.LockToForegroundWindow && !ForegroundAllowed()) return false;
         if (ClickOverride != null) return ClickOverride(s);
         if (!MouseInput.TryGetTarget(s, random, out var p)) return false;
 

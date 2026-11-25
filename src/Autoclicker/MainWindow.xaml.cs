@@ -60,10 +60,17 @@ public partial class MainWindow : Window
 
         foreach (TextBox box in NumberBoxes())
         {
-            box.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(Compat.IsDigit);
-            DataObject.AddPastingHandler(box, OnNumberPaste);
+            // X e Y admiten un "-" inicial: los monitores a la izquierda o encima del principal
+            // tienen coordenadas negativas.
+            bool signed = box == XBox || box == YBox;
+            box.PreviewTextInput += (_, e) => e.Handled = !AcceptsInput(box, e.Text, signed);
+            DataObject.AddPastingHandler(box, (_, e) =>
+            {
+                if (e.DataObject.GetData(DataFormats.UnicodeText) is not string text || !AcceptsInput(box, text, signed))
+                    e.CancelCommand();
+            });
             box.GotKeyboardFocus += (_, _) => box.SelectAll();
-            box.LostKeyboardFocus += (_, _) => { if (box.Text.Length == 0) box.Text = "0"; };
+            box.LostKeyboardFocus += (_, _) => { if (box.Text.Length == 0 || box.Text == "-") box.Text = "0"; };
         }
 
         EmergencyCornerWatcher.Triggered += OnEmergencyCorner;
@@ -681,9 +688,13 @@ public partial class MainWindow : Window
 
     private static long Number(TextBox box) => long.TryParse(box.Text, out long v) ? v : 0;
 
-    private static void OnNumberPaste(object sender, DataObjectPastingEventArgs e)
+    /// <summary>¿Seguiría siendo un número válido el campo tras escribir o pegar <paramref name="input"/>?</summary>
+    private static bool AcceptsInput(TextBox box, string input, bool signed)
     {
-        if (e.DataObject.GetData(DataFormats.UnicodeText) is not string text || !text.All(Compat.IsDigit))
-            e.CancelCommand();
+        string result = box.Text.Remove(box.SelectionStart, box.SelectionLength).Insert(box.SelectionStart, input);
+        int start = signed && result.StartsWith("-", StringComparison.Ordinal) ? 1 : 0;
+        for (int i = start; i < result.Length; i++)
+            if (!Compat.IsDigit(result[i])) return false;
+        return true;
     }
 }
