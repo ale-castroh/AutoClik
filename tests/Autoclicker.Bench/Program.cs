@@ -20,20 +20,27 @@ static void Target(int seconds)
         StartPosition = FormStartPosition.Manual, Bounds = new Rectangle(200, 200, 240, 240),
         BackColor = Color.MediumPurple, ShowInTaskbar = false,
     };
-    int left = 0;
+    int left = 0, wheel = 0;
     var hits = new List<string>();
+    var keys = new List<string>();
     form.MouseDown += (_, e) =>
     {
         if (e.Button == MouseButtons.Left) left++;
         // Posición redondeada a 20 px para agrupar, con el botón.
         hits.Add($"({e.X / 20 * 20},{e.Y / 20 * 20}) {e.Button}");
     };
+    // Teclas y rueda (pruebas de macros)
+    form.KeyPreview = true;
+    form.KeyDown += (_, e) => keys.Add(e.KeyCode.ToString());
+    form.MouseWheel += (_, e) => wheel += e.Delta / 120;
     form.Shown += async (_, _) =>
     {
         await Task.Delay(seconds * 1000);
         Console.WriteLine($"Diana: {left} clics izquierdos");
         foreach (var g in hits.GroupBy(h => h)) Console.WriteLine($"  {g.Key} x{g.Count()}");
         Console.WriteLine($"  orden: {string.Join(" -> ", hits.Take(6))}");
+        if (keys.Count > 0) Console.WriteLine($"  teclas: {string.Join(" ", keys)}");
+        if (wheel != 0) Console.WriteLine($"  rueda: {wheel} pasos");
         form.Close();
     };
     Application.Run(form);

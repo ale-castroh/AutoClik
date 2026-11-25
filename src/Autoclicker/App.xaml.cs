@@ -28,6 +28,7 @@ public partial class App : Application
             else if (arg.Equals("--record-injected", StringComparison.OrdinalIgnoreCase))
             {
                 Input.ClickRecorder.AcceptInjected = true;
+                Macros.MacroRecorder.AcceptInjected = true;
             }
             // --antiafk-seconds=N: el anti-AFK cuenta en segundos (solo pruebas automáticas).
             else if (arg.StartsWith("--antiafk-seconds=", StringComparison.OrdinalIgnoreCase)

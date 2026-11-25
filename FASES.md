@@ -102,6 +102,26 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 2.1.0 — Macros ✅
+- Nueva sección **Macros** (`Macros/`, `MainWindow.Macros.cs`), al nivel de TinyTask o mejor:
+  - **Grabar** (F7): hooks de ratón y teclado de bajo nivel; movimientos cada 8 ms como mucho (y siempre el
+    último antes de un clic), botones (también laterales), rueda vertical y horizontal, teclas con código de
+    escaneo y bit de extendida. Ignora la entrada simulada, los clics sobre AutoClik y las teclas de los
+    atajos; quita la espera inicial, los movimientos sueltos del final y las teclas modificadoras del final
+    (el Ctrl de "Ctrl+F7"). Mantener una tecla graba solo la primera pulsación. Modos: todo, ratón, teclas.
+    La ventana se oculta y sale la barra flotante (la de los puntos, con "no escribas contraseñas").
+  - **Reproducir** (F8): hilo propio de alta prioridad con línea de tiempo absoluta (como el motor de clics);
+    una vez, N veces, sin fin o durante X min; ×0,5-×10. Teclas por código de escaneo (juegos). Suelta todo
+    lo pulsado al acabar cada vuelta y al parar. La ventana se oculta para que la macro no clique sobre
+    AutoClik; F8, la esquina o Detener la paran. Un solo "piloto automático" a la vez (clics / macro).
+  - **Biblioteca**: un .json por macro en `macros/` (eventos en una cadena compacta, no lista JSON);
+    elegir, renombrar, duplicar, exportar/importar `.autoclik`, eliminar. Escritura atómica.
+  - Atajos F7 y F8 configurables en Ajustes → Atajo (la captura de atajos se generalizó a los tres).
+- Sin "convertir a .exe" (como TinyTask): el SAC de Windows bloquea .exe sin firmar.
+- Pruebas: `tests/ui/macros.ps1` (grabar en la diana clic + A + B + rueda + clic, F7, reproducir 2 vueltas
+  a x2: la diana recibe 6 clics, A B A B A B y 6 pasos de rueda; nada queda pulsado). La diana del banco
+  ahora también cuenta teclas y rueda. `clics-reales.ps1` también pasa por Macros.
+
 ## Versión 2.0.0 — Rediseño completo ✅
 - **Barra lateral** con una sección por función (Clics, Anti-AFK, Ajustes abajo); la sección activa
   lleva una raya de acento y un punto verde si la función está en marcha. Ventana de 440 px (antes 380).

@@ -29,12 +29,15 @@ public partial class MainWindow : Window
     private bool _picking; // eligiendo un punto en pantalla (ventana oculta)
     private string? _notice; // aviso puntual en el estado (p. ej. "Añade al menos un punto")
 
-    private HotkeyManager? _hotkeys;
+    private HotkeyManager? _hotkeys;        // iniciar/detener clics (F6)
+    private HotkeyManager? _recordHotkeys;  // grabar macro (F7)
+    private HotkeyManager? _playHotkeys;    // reproducir macro (F8)
     private TrayIcon? _tray;
     private nint _hwnd;
 
     private bool _themeRefreshQueued;
-    private bool _capturingHotkey;
+    private ToggleButton? _captureButton; // atajo que se está eligiendo ("Pulsa una tecla…")
+    private bool _capturingHotkey => _captureButton != null;
     private bool _exiting;
     private string? _hotkeyError;
     private long _runStarted;
@@ -81,7 +84,7 @@ public partial class MainWindow : Window
         AboutVersionText.Text = Strings.F("AboutVersion", $"{version.Major}.{version.Minor}.{version.Build}");
 
         // El anti-AFK espera mientras se clica, se graba o se elige un punto.
-        _antiAfk.ShouldWait = () => StartButton.IsChecked == true || _recording || _picking;
+        _antiAfk.ShouldWait = () => StartButton.IsChecked == true || _recording || _picking || MacroActive;
         _antiAfk.StatusChanged += () =>
         {
             AntiAfkStatusText.Text = _antiAfk.Status;
@@ -90,11 +93,13 @@ public partial class MainWindow : Window
         };
 
         InitPersistence();
+        InitMacros();
     }
 
     private IEnumerable<TextBox> NumberBoxes() =>
     [
         IntervalBox, HoldBox, RepeatCountBox, DurationBox, XBox, YBox, OffsetBox, JitterBox, DelayBox, AfkMinutesBox,
+        MacroCountBox, MacroMinutesBox,
     ];
 
     // ================= Secciones (barra lateral) =================
@@ -105,6 +110,7 @@ public partial class MainWindow : Window
     private (FrameworkElement Page, ToggleButton Button)[] Sections =>
     [
         (MainPage, NavClicksButton),
+        (MacrosPage, NavMacrosButton),
         (AntiAfkPage, NavAntiAfkButton),
         (SettingsPage, SettingsButton),
     ];
@@ -112,7 +118,7 @@ public partial class MainWindow : Window
     private FrameworkElement CurrentPage => Sections.First(s => s.Page.Visibility == Visibility.Visible).Page;
 
     // Mientras se carga la ventana, "Clics" ya llega marcado antes de que existan las secciones.
-    private bool SectionsReady => MainPage != null && AntiAfkPage != null && SettingsPage != null;
+    private bool SectionsReady => MainPage != null && MacrosPage != null && AntiAfkPage != null && SettingsPage != null;
 
     private void Nav_Checked(object sender, RoutedEventArgs e)
     {
@@ -151,6 +157,7 @@ public partial class MainWindow : Window
         {
             double height = MainPage.ActualHeight;
             AntiAfkPage.MinHeight = height;
+            MacrosPage.MinHeight = height;
             SettingsScroll.MaxHeight = Math.Max(height, 400);
         }
 
@@ -191,6 +198,16 @@ public partial class MainWindow : Window
         if (!_hotkeys.TrySet(savedHotkey))
             _hotkeyError = Strings.F("HotkeyTakenPick", savedHotkey);
 
+        _recordHotkeys = new HotkeyManager(_hwnd, id: 3);
+        _recordHotkeys.Pressed += OnRecordHotkey;
+        var recordKey = new Hotkey(_data.Prefs.MacroRecordVk, _data.Prefs.MacroRecordModifiers);
+        if (!_recordHotkeys.TrySet(recordKey)) _hotkeyError ??= Strings.F("HotkeyTakenPick", recordKey);
+
+        _playHotkeys = new HotkeyManager(_hwnd, id: 4);
+        _playHotkeys.Pressed += OnPlayHotkey;
+        var playKey = new Hotkey(_data.Prefs.MacroPlayVk, _data.Prefs.MacroPlayModifiers);
+        if (!_playHotkeys.TrySet(playKey)) _hotkeyError ??= Strings.F("HotkeyTakenPick", playKey);
+
         _tray = new TrayIcon(_hwnd);
         _tray.LeftClick += ToggleWindowFromTray;
         _tray.RightClick += ShowTrayMenu;
@@ -222,7 +239,10 @@ public partial class MainWindow : Window
         EmergencyCornerWatcher.Triggered -= OnEmergencyCorner;
         _markers.Changed -= UpdatePointsSummary;
         _markers.Clear();
+        DisposeMacros();
         _hotkeys?.Dispose();
+        _recordHotkeys?.Dispose();
+        _playHotkeys?.Dispose();
         _tray?.Dispose();
         ThemeManager.ThemeChanged -= OnThemeChanged;
         base.OnClosed(e);
@@ -252,7 +272,8 @@ public partial class MainWindow : Window
             return 0;
         }
 
-        if (_hotkeys?.HandleMessage(msg, wParam) == true || _tray?.HandleMessage(msg, lParam) == true)
+        if (_hotkeys?.HandleMessage(msg, wParam) == true || _recordHotkeys?.HandleMessage(msg, wParam) == true
+            || _playHotkeys?.HandleMessage(msg, wParam) == true || _tray?.HandleMessage(msg, lParam) == true)
         {
             handled = true;
             return 0;
@@ -300,7 +321,7 @@ public partial class MainWindow : Window
 
     private void UpdateIcons()
     {
-        bool running = StartButton.IsChecked == true;
+        bool running = StartButton.IsChecked == true || _player.IsPlaying;
         Icon = IconFactory.Render(64, active: false);
         _tray?.Update(running, Strings.T(running ? "TrayRunning" : "TrayStopped"));
     }
@@ -400,6 +421,13 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_player.IsPlaying) PlayMacroButton.IsChecked = false; // un solo "piloto automático" a la vez
+        if (_macroRecording)
+        {
+            Dispatcher.InvokeAsync(() => StartButton.IsChecked = false);
+            return;
+        }
+
         if (PointsPositionRadio.IsChecked == true && _markers.Count == 0)
         {
             _notice = Strings.T("NeedPoint");
@@ -437,6 +465,11 @@ public partial class MainWindow : Window
     /// <summary>Parada de emergencia: el usuario llevó el ratón a una esquina.</summary>
     private void OnEmergencyCorner()
     {
+        if (PlayMacroButton.IsChecked == true)
+        {
+            _macroNotice = Strings.T("StoppedCorner");
+            PlayMacroButton.IsChecked = false;
+        }
         if (StartButton.IsChecked != true) return;
         StartButton.IsChecked = false;
         _notice = Strings.T("StoppedCorner");
@@ -548,42 +581,55 @@ public partial class MainWindow : Window
     }
 
     // Checked/Unchecked (y no Click) para que funcione igual con ratón, teclado o lectores de pantalla.
-    private void HotkeyButton_Checked(object sender, RoutedEventArgs e)
+    // Los tres atajos (clics, grabar macro, reproducir macro) comparten esta captura.
+    private void AnyHotkeyButton_Checked(object sender, RoutedEventArgs e)
     {
-        if (!_capturingHotkey) BeginHotkeyCapture();
+        var button = (ToggleButton)sender;
+        if (_captureButton == button) return;
+        if (_captureButton != null) EndHotkeyCapture(null);
+        BeginHotkeyCapture(button);
     }
 
-    private void HotkeyButton_Unchecked(object sender, RoutedEventArgs e)
+    private void AnyHotkeyButton_Unchecked(object sender, RoutedEventArgs e)
     {
-        if (_capturingHotkey) EndHotkeyCapture(null);
+        if (_captureButton == sender) EndHotkeyCapture(null);
     }
 
-    private void BeginHotkeyCapture()
+    private HotkeyManager? ManagerFor(ToggleButton? button) =>
+        button == RecordHotkeyButton ? _recordHotkeys : button == PlayHotkeyButton ? _playHotkeys : _hotkeys;
+
+    private IEnumerable<HotkeyManager> AllHotkeys =>
+        new[] { _hotkeys, _recordHotkeys, _playHotkeys }.Where(h => h != null)!;
+
+    private void BeginHotkeyCapture(ToggleButton button)
     {
-        _capturingHotkey = true;
-        if (_hotkeys != null) _hotkeys.Suspended = true; // que el atajo actual no salte mientras eliges
-        HotkeyButton.IsChecked = true;
-        HotkeyButton.Content = Strings.T("PressKey");
+        _captureButton = button;
+        foreach (var h in AllHotkeys) h.Suspended = true; // que ningún atajo salte mientras eliges
+        button.IsChecked = true;
+        button.Content = Strings.T("PressKey");
         HotkeyNoteText.Text = Strings.T("PressKeyHint");
     }
 
     private void EndHotkeyCapture(Hotkey? chosen)
     {
-        if (_hotkeys == null) return;
-        _capturingHotkey = false;
-        HotkeyButton.IsChecked = false;
-        _hotkeys.Suspended = false;
+        ToggleButton? button = _captureButton;
+        HotkeyManager? manager = ManagerFor(button);
+        _captureButton = null;
+        if (button != null) button.IsChecked = false;
+        foreach (var h in AllHotkeys) h.Suspended = false;
+        if (manager == null) return;
 
-        if (chosen is { } hotkey && hotkey != _hotkeys.Current)
+        if (chosen is { } hotkey && hotkey != manager.Current)
         {
-            Hotkey previous = _hotkeys.Current;
-            if (_hotkeys.TrySet(hotkey))
+            Hotkey previous = manager.Current;
+            bool usedHere = AllHotkeys.Any(h => h != manager && h.Current == hotkey);
+            if (!usedHere && manager.TrySet(hotkey))
             {
                 _hotkeyError = null;
             }
             else
             {
-                _hotkeys.TrySet(previous);
+                manager.TrySet(previous);
                 _hotkeyError = Strings.F("HotkeyTaken", hotkey);
             }
         }
@@ -595,6 +641,10 @@ public partial class MainWindow : Window
     private void RefreshHotkeyUi()
     {
         HotkeyButton.Content = _hotkeys?.Current.ToString() ?? "F6";
+        RecordHotkeyButton.Content = _recordHotkeys?.Current.ToString() ?? "F7";
+        PlayHotkeyButton.Content = _playHotkeys?.Current.ToString() ?? "F8";
+        Theme.Ui.SetKeyText(RecordMacroButton, RecordHotkeyButton.Content.ToString()!);
+        Theme.Ui.SetKeyText(PlayMacroButton, PlayHotkeyButton.Content.ToString()!);
         HotkeyNoteText.Text = _hotkeyError ?? Strings.T("HotkeyWorksHidden");
         HotkeyNoteText.Foreground = (System.Windows.Media.Brush)FindResource(_hotkeyError != null ? "AccentBrush" : "TextSecondaryBrush");
     }

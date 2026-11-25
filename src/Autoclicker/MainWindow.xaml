@@ -85,6 +85,9 @@
                     <ToggleButton x:Name="NavClicksButton" Content="&#xE8B0;" ToolTip="{l:T NavClicks}" IsChecked="True"
                                   Tag="{Binding IsChecked, ElementName=StartButton}"
                                   Style="{StaticResource NavButtonStyle}" Checked="Nav_Checked" Unchecked="Nav_Unchecked" />
+                    <ToggleButton x:Name="NavMacrosButton" Content="&#xE7C8;" ToolTip="{l:T Macros}"
+                                  Tag="{Binding IsChecked, ElementName=PlayMacroButton}"
+                                  Style="{StaticResource NavButtonStyle}" Checked="Nav_Checked" Unchecked="Nav_Unchecked" />
                     <ToggleButton x:Name="NavAntiAfkButton" Content="&#xE823;" ToolTip="{l:T AntiAfk}"
                                   Tag="{Binding IsChecked, ElementName=AntiAfkSwitch}"
                                   Visibility="{Binding IsChecked, ElementName=ExperimentalSwitch, Converter={StaticResource BoolToVis}}"
@@ -296,6 +299,139 @@
                 </Border>
             </StackPanel>
 
+            <!-- ================= Macros (grabar y reproducir ratón y teclado) ================= -->
+            <StackPanel x:Name="MacrosPage" Margin="12,0,16,16" Visibility="Collapsed">
+                <StackPanel.RenderTransform>
+                    <TranslateTransform />
+                </StackPanel.RenderTransform>
+
+                <!-- Lectura: estado, duración / posición y botones -->
+                <StackPanel Margin="2,6,0,16">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="7" Height="7" VerticalAlignment="Center">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{DynamicResource IdleDotBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=PlayMacroButton}" Value="True">
+                                            <Setter Property="Fill" Value="{DynamicResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock x:Name="MacroStatusText" Text="" Margin="7,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=PlayMacroButton}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <TextBlock x:Name="MacroTimeText" Text="00:00" Margin="-2,6,0,0" FontFamily="{StaticResource NumberFont}"
+                               FontSize="52" LineStackingStrategy="BlockLineHeight" LineHeight="48" />
+                    <TextBlock x:Name="MacroDetailText" Text="" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionStyle}" />
+
+                    <!-- Progreso de la vuelta (solo al reproducir) -->
+                    <Grid x:Name="MacroProgress" Height="3" Margin="0,10,0,0" Visibility="Collapsed">
+                        <Border CornerRadius="1.5" Background="{DynamicResource ControlHoverBrush}" />
+                        <Border x:Name="MacroProgressFill" CornerRadius="1.5" HorizontalAlignment="Left" Width="0"
+                                Background="{DynamicResource SuccessBrush}" />
+                    </Grid>
+
+                    <Grid Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <ToggleButton x:Name="RecordMacroButton" Grid.Column="0" Style="{StaticResource RecordToggleStyle}"
+                                      Content="{l:T MacroRecord}" t:Ui.CheckedText="{l:T Finish}" t:Ui.KeyText="F7"
+                                      ToolTip="{l:T MacroRecordTip}"
+                                      Checked="RecordMacro_Checked" Unchecked="RecordMacro_Unchecked" />
+                        <ToggleButton x:Name="PlayMacroButton" Grid.Column="2" Style="{StaticResource PrimaryToggleStyle}"
+                                      Content="{l:T MacroPlay}" t:Ui.CheckedText="{l:T StopBtn}" t:Ui.KeyText="F8"
+                                      Checked="PlayMacro_Checked" Unchecked="PlayMacro_Unchecked" />
+                    </Grid>
+                </StackPanel>
+
+                <Border x:Name="MacroOptionsCard" Style="{StaticResource ListCardStyle}">
+                    <StackPanel>
+                        <!-- Macro elegida: menú con la biblioteca (elegir, renombrar, duplicar, exportar, importar, borrar) -->
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <Button x:Name="MacroPickButton" DockPanel.Dock="Right" VerticalAlignment="Center" MaxWidth="200"
+                                    Style="{StaticResource SecondaryButtonStyle}" Click="MacroPick_Click" ToolTip="{l:T MacroLibraryTip}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="MacroNameText" Text="{l:T MacroNone}" TextTrimming="CharacterEllipsis"
+                                               MaxWidth="150" VerticalAlignment="Center" />
+                                    <TextBlock Text="&#xE70D;" FontFamily="{StaticResource IconFont}" FontSize="8"
+                                               Margin="8,1,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Text="{l:T Macro}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <Border DockPanel.Dock="Right" VerticalAlignment="Center" Style="{StaticResource SegmentedContainerStyle}">
+                                <UniformGrid Columns="4">
+                                    <RadioButton x:Name="MacroOnceRadio" Content="{l:T MacroOnce}" GroupName="MacroRepeat" IsChecked="True" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="MacroCountRadio" Content="{l:T Times}" GroupName="MacroRepeat" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="MacroForeverRadio" Content="{l:T Forever}" GroupName="MacroRepeat" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="MacroTimeRadio" Content="{l:T Time}" GroupName="MacroRepeat" Style="{StaticResource CompactSegmentStyle}" />
+                                </UniformGrid>
+                            </Border>
+                            <TextBlock Text="{l:T Repeat}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                        <DockPanel Style="{StaticResource DetailRowStyle}"
+                                   Visibility="{Binding IsChecked, ElementName=MacroCountRadio, Converter={StaticResource BoolToVis}}">
+                            <TextBlock DockPanel.Dock="Right" Text="{l:T MacroLoops}" Style="{StaticResource UnitStyle}" />
+                            <TextBox x:Name="MacroCountBox" DockPanel.Dock="Right" Text="10" MaxLength="6" Style="{StaticResource SmallFieldStyle}" />
+                            <TextBlock Text="{l:T MacroPlayTimes}" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <DockPanel Style="{StaticResource DetailRowStyle}"
+                                   Visibility="{Binding IsChecked, ElementName=MacroTimeRadio, Converter={StaticResource BoolToVis}}">
+                            <TextBlock DockPanel.Dock="Right" Text="min" Style="{StaticResource UnitStyle}" />
+                            <TextBox x:Name="MacroMinutesBox" DockPanel.Dock="Right" Text="10" MaxLength="4" Style="{StaticResource SmallFieldStyle}" />
+                            <TextBlock Text="{l:T MacroPlayFor}" Style="{StaticResource CaptionStyle}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <Border DockPanel.Dock="Right" VerticalAlignment="Center" Style="{StaticResource SegmentedContainerStyle}">
+                                <UniformGrid Columns="5">
+                                    <RadioButton x:Name="MacroSpeedHalf" Content="{l:T SpeedHalf}" GroupName="MacroSpeed" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="MacroSpeed1" Content="×1" GroupName="MacroSpeed" IsChecked="True" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="MacroSpeed2" Content="×2" GroupName="MacroSpeed" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="MacroSpeed4" Content="×4" GroupName="MacroSpeed" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="MacroSpeed10" Content="×10" GroupName="MacroSpeed" Style="{StaticResource CompactSegmentStyle}" />
+                                </UniformGrid>
+                            </Border>
+                            <TextBlock Text="{l:T Speed}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <Border DockPanel.Dock="Right" VerticalAlignment="Center" Style="{StaticResource SegmentedContainerStyle}">
+                                <UniformGrid Columns="3">
+                                    <RadioButton x:Name="MacroModeAll" Content="{l:T MacroModeAll}" GroupName="MacroMode" IsChecked="True" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="MacroModeMouse" Content="{l:T MacroModeMouse}" GroupName="MacroMode" Style="{StaticResource CompactSegmentStyle}" />
+                                    <RadioButton x:Name="MacroModeKeys" Content="{l:T MacroModeKeys}" GroupName="MacroMode" Style="{StaticResource CompactSegmentStyle}" />
+                                </UniformGrid>
+                            </Border>
+                            <TextBlock Text="{l:T MacroRecordWhat}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
             <!-- ================= Anti-AFK (experimental) ================= -->
             <StackPanel x:Name="AntiAfkPage" Margin="12,0,16,16" Visibility="Collapsed">
                 <StackPanel.RenderTransform>
@@ -406,7 +542,7 @@
                         <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
                             <ToggleButton x:Name="HotkeyButton" DockPanel.Dock="Right" VerticalAlignment="Center"
                                           Content="F6" Style="{StaticResource KeyCapStyle}"
-                                          Checked="HotkeyButton_Checked" Unchecked="HotkeyButton_Unchecked" />
+                                          Checked="AnyHotkeyButton_Checked" Unchecked="AnyHotkeyButton_Unchecked" />
                             <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                                 <TextBlock Text="{l:T StartStop}" Style="{StaticResource RowTitleStyle}" />
                                 <TextBlock x:Name="HotkeyNoteText" Text="{l:T HotkeyWorksHidden}"
@@ -424,6 +560,20 @@
                                 </UniformGrid>
                             </Border>
                             <TextBlock Text="{l:T Mode}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <ToggleButton x:Name="RecordHotkeyButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                          Content="F7" Style="{StaticResource KeyCapStyle}"
+                                          Checked="AnyHotkeyButton_Checked" Unchecked="AnyHotkeyButton_Unchecked" />
+                            <TextBlock Text="{l:T MacroRecordHotkey}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <ToggleButton x:Name="PlayHotkeyButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                          Content="F8" Style="{StaticResource KeyCapStyle}"
+                                          Checked="AnyHotkeyButton_Checked" Unchecked="AnyHotkeyButton_Unchecked" />
+                            <TextBlock Text="{l:T MacroPlayHotkey}" Style="{StaticResource RowTitleStyle}" />
                         </DockPanel>
                     </StackPanel>
                 </Border>

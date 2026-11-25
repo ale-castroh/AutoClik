@@ -63,6 +63,18 @@ public sealed class GlobalPrefs
     public double? WindowTop { get; set; }
 
     // Anti-AFK (experimental): ventana por nombre de proceso y punto en coordenadas de cliente.
+    // Macros (2.1): atajos, última macro elegida y opciones de reproducción. Globales, no por perfil.
+    public int MacroRecordVk { get; set; } = 0x76; // F7
+    public uint MacroRecordModifiers { get; set; }
+    public int MacroPlayVk { get; set; } = 0x77;   // F8
+    public uint MacroPlayModifiers { get; set; }
+    public string? MacroName { get; set; }
+    public Macros.MacroRepeat MacroRepeat { get; set; } = Macros.MacroRepeat.Once;
+    public int MacroCount { get; set; } = 10;
+    public int MacroMinutes { get; set; } = 10;
+    public double MacroSpeed { get; set; } = 1.0;
+    public Macros.MacroRecordMode MacroMode { get; set; } = Macros.MacroRecordMode.All;
+
     /// <summary>Mostrar funciones experimentales (Anti-AFK...). Apagado por defecto.</summary>
     public bool Experimental { get; set; }
     public bool AntiAfkEnabled { get; set; }
@@ -85,6 +97,16 @@ public sealed class GlobalPrefs
         ["WindowLeft"] = WindowLeft,
         ["WindowTop"] = WindowTop,
         ["Experimental"] = Experimental,
+        ["MacroRecordVk"] = MacroRecordVk,
+        ["MacroRecordModifiers"] = MacroRecordModifiers,
+        ["MacroPlayVk"] = MacroPlayVk,
+        ["MacroPlayModifiers"] = MacroPlayModifiers,
+        ["MacroName"] = MacroName,
+        ["MacroRepeat"] = MacroRepeat,
+        ["MacroCount"] = MacroCount,
+        ["MacroMinutes"] = MacroMinutes,
+        ["MacroSpeed"] = MacroSpeed,
+        ["MacroMode"] = MacroMode,
         ["AntiAfkEnabled"] = AntiAfkEnabled,
         ["AntiAfkMinutes"] = AntiAfkMinutes,
         ["AntiAfkProcess"] = AntiAfkProcess,
@@ -108,6 +130,16 @@ public sealed class GlobalPrefs
             Translucent = j.Bool("Translucent", d.Translucent),
             WindowLeft = j.NumOrNull("WindowLeft"),
             WindowTop = j.NumOrNull("WindowTop"),
+            MacroRecordVk = j.Int("MacroRecordVk", d.MacroRecordVk),
+            MacroRecordModifiers = (uint)j.Int("MacroRecordModifiers", 0),
+            MacroPlayVk = j.Int("MacroPlayVk", d.MacroPlayVk),
+            MacroPlayModifiers = (uint)j.Int("MacroPlayModifiers", 0),
+            MacroName = j.Str("MacroName"),
+            MacroRepeat = j.Enum("MacroRepeat", d.MacroRepeat),
+            MacroCount = j.Int("MacroCount", d.MacroCount),
+            MacroMinutes = j.Int("MacroMinutes", d.MacroMinutes),
+            MacroSpeed = j.Num("MacroSpeed", d.MacroSpeed),
+            MacroMode = j.Enum("MacroMode", d.MacroMode),
             // Sin el campo (ajustes de la 1.4): encendido si ya se usaba el anti-AFK.
             Experimental = j.Bool("Experimental", j.Bool("AntiAfkEnabled", false) || j.Str("AntiAfkProcess") != null),
             AntiAfkEnabled = j.Bool("AntiAfkEnabled", false),

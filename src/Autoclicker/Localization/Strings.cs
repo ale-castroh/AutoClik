@@ -33,6 +33,9 @@ public static class Strings
     /// <summary>"1 clic" / "3 clics" (o click/clicks).</summary>
     public static string Clicks(long n) => n == 1 ? T("UnitClick") : T("UnitClicks");
 
+    /// <summary>"1 tecla" / "3 teclas" (o key/keys).</summary>
+    public static string Keys(long n) => n == 1 ? T("UnitKey") : T("UnitKeys");
+
     private static readonly Dictionary<string, (string Es, string En)> Table = new()
     {
         // ---- Barra de título y bandeja ----
@@ -150,6 +153,56 @@ public static class Strings
         ["AboutHint"] = ("Ajustes y registro de errores", "Settings and error log"),
         ["OpenDataFolder"] = ("Abrir carpeta", "Open folder"),
         ["OpenDataFolderTip"] = ("Abre la carpeta con settings.json y error.log", "Opens the folder with settings.json and error.log"),
+
+        // ---- Macros (2.1) ----
+        ["Macros"] = ("Macros", "Macros"),
+        ["Macro"] = ("Macro", "Macro"),
+        ["MacroRecord"] = ("Grabar", "Record"),
+        ["MacroRecordTip"] = ("Graba lo que haces con el ratón y el teclado. La ventana se oculta mientras grabas",
+                              "Records what you do with the mouse and keyboard. The window hides while you record"),
+        ["MacroPlay"] = ("Reproducir", "Play"),
+        ["MacroLibraryTip"] = ("Tus macros: elegir, renombrar, duplicar, exportar, importar o eliminar",
+                               "Your macros: pick, rename, duplicate, export, import or delete"),
+        ["MacroNone"] = ("Ninguna", "None"),
+        ["MacroOnce"] = ("Una vez", "Once"),
+        ["MacroLoops"] = ("veces", "times"),
+        ["MacroPlayTimes"] = ("Reproducir", "Play"),
+        ["MacroPlayFor"] = ("Reproducir durante", "Play for"),
+        ["MacroRecordWhat"] = ("Grabar", "Record"),
+        ["MacroModeAll"] = ("Todo", "All"),
+        ["MacroModeMouse"] = ("Ratón", "Mouse"),
+        ["MacroModeKeys"] = ("Teclas", "Keys"),
+        ["MacroRecordHotkey"] = ("Grabar macro", "Record macro"),
+        ["MacroPlayHotkey"] = ("Reproducir macro", "Play macro"),
+        ["MacroBarPrivacy"] = ("no escribas contraseñas", "don't type passwords"),
+        ["MacroBarCounts"] = ("{0} {1}, {2} {3}", "{0} {1}, {2} {3}"),
+        ["MacroNothing"] = ("No se grabó nada", "Nothing was recorded"),
+        ["MacroN"] = ("Macro {0}", "Macro {0}"),
+        ["MacroSaved"] = ("Macro guardada", "Macro saved"),
+        ["MacroNoneHint"] = ("Graba una macro primero", "Record a macro first"),
+        ["MacroRename"] = ("Renombrar…", "Rename…"),
+        ["MacroRenameTitle"] = ("Renombrar macro", "Rename macro"),
+        ["MacroDuplicate"] = ("Duplicar", "Duplicate"),
+        ["MacroCopyOf"] = ("{0} (copia)", "{0} (copy)"),
+        ["MacroExport"] = ("Exportar…", "Export…"),
+        ["MacroImport"] = ("Importar…", "Import…"),
+        ["MacroDelete"] = ("Eliminar macro", "Delete macro"),
+        ["MacroDeleteConfirm"] = ("Se eliminará «{0}». No se puede deshacer.", "\"{0}\" will be deleted. This can't be undone."),
+        ["MacroExists"] = ("Ya existe una macro con ese nombre", "A macro with that name already exists"),
+        ["MacroFileFilter"] = ("Macro de AutoClik (*.autoclik)|*.autoclik|Todos los archivos (*.*)|*.*",
+                               "AutoClik macro (*.autoclik)|*.autoclik|All files (*.*)|*.*"),
+        ["MacroExported"] = ("Macro exportada", "Macro exported"),
+        ["MacroImported"] = ("Macro importada", "Macro imported"),
+        ["MacroFileError"] = ("No se pudo leer o guardar el archivo", "Couldn't read or save the file"),
+        ["MacroPlayingLoopOf"] = ("Reproduciendo, vuelta {0} de {1}", "Playing, loop {0} of {1}"),
+        ["MacroPlayingLoop"] = ("Reproduciendo, vuelta {0}", "Playing, loop {0}"),
+        ["MacroOfTotal"] = ("de {0} en esta vuelta", "of {0} in this loop"),
+        ["MacroEmptyState"] = ("Sin macros", "No macros"),
+        ["MacroEmptyHint"] = ("Pulsa Grabar para crear la primera", "Press Record to create your first one"),
+        ["MacroReady"] = ("Lista", "Ready"),
+        ["MacroCounts"] = ("{0:N0} {1}, {2:N0} {3}, {4:N0} movimientos", "{0:N0} {1}, {2:N0} {3}, {4:N0} moves"),
+        ["UnitKey"] = ("tecla", "key"),
+        ["UnitKeys"] = ("teclas", "keys"),
 
         // ---- Barra lateral ----
         ["NavClicks"] = ("Clics", "Clicks"),

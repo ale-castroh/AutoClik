@@ -17,10 +17,14 @@ public partial class RecordingBar : Window
 
     public event Action? StopRequested;
 
-    public RecordingBar(string stopKeys)
+    /// <summary>Texto propio en lugar de "N clics" (macros: "8 clics, 23 teclas"). Se añade el tiempo.</summary>
+    public Func<string>? InfoProvider { get; set; }
+
+    /// <param name="note">Aviso extra tras la pista (p. ej. "no escribas contraseñas").</param>
+    public RecordingBar(string stopKeys, string? note = null)
     {
         InitializeComponent();
-        HintText.Text = Strings.F("ToFinish", stopKeys);
+        HintText.Text = Strings.F("ToFinish", stopKeys) + (note is null ? "" : " · " + note);
         _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(250) };
         _timer.Tick += (_, _) => Refresh();
         _timer.Start();
@@ -35,10 +39,11 @@ public partial class RecordingBar : Window
         Refresh();
     }
 
-    private void Refresh()
+    public void Refresh()
     {
         TimeSpan t = Compat.Elapsed(_started);
-        InfoText.Text = $"{_count} {Strings.Clicks(_count)} · {(int)t.TotalMinutes}:{t.Seconds:00}";
+        string info = InfoProvider?.Invoke() ?? $"{_count} {Strings.Clicks(_count)}";
+        InfoText.Text = $"{info} · {(int)t.TotalMinutes}:{t.Seconds:00}";
     }
 
     protected override void OnSourceInitialized(EventArgs e)

@@ -10,8 +10,7 @@ namespace Autoclicker.Input;
 /// </summary>
 public sealed class HotkeyManager : IDisposable
 {
-    private const int HotkeyId = 1;
-
+    private readonly int _id;
     private readonly nint _hwnd;
     private readonly DispatcherTimer _poll;
     private bool _registered;
@@ -23,9 +22,11 @@ public sealed class HotkeyManager : IDisposable
     public event Action? Pressed;
     public event Action? Released;
 
-    public HotkeyManager(nint hwnd)
+    /// <param name="id">Identificador del atajo en la ventana (uno distinto por atajo: 1 clics, 3 grabar, 4 reproducir).</param>
+    public HotkeyManager(nint hwnd, int id = 1)
     {
         _hwnd = hwnd;
+        _id = id;
         _poll = new DispatcherTimer(DispatcherPriority.Input) { Interval = TimeSpan.FromMilliseconds(10) };
         _poll.Tick += (_, _) => Poll();
     }
@@ -58,7 +59,7 @@ public sealed class HotkeyManager : IDisposable
     /// <summary>Llamar desde el WndProc de la ventana al recibir WM_HOTKEY.</summary>
     public bool HandleMessage(int msg, nint wParam)
     {
-        if (msg != WM_HOTKEY || wParam != HotkeyId) return false;
+        if (msg != WM_HOTKEY || wParam != _id) return false;
         if (!_down)
         {
             _down = true;
@@ -80,14 +81,14 @@ public sealed class HotkeyManager : IDisposable
             return true;
         }
 
-        _registered = RegisterHotKey(_hwnd, HotkeyId, Current.Modifiers | MOD_NOREPEAT, (uint)Current.VirtualKey) != 0;
+        _registered = RegisterHotKey(_hwnd, _id, Current.Modifiers | MOD_NOREPEAT, (uint)Current.VirtualKey) != 0;
         return _registered;
     }
 
     private void Unregister()
     {
         _poll.Stop();
-        if (_registered && !Current.IsMouse) UnregisterHotKey(_hwnd, HotkeyId);
+        if (_registered && !Current.IsMouse) UnregisterHotKey(_hwnd, _id);
         _registered = false;
         if (_down)
         {

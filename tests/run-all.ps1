@@ -46,6 +46,7 @@ $ui = @(
     @{ Name = 'Una sola copia abierta'; File = 'instancia.ps1' },
     @{ Name = 'Arrastres, cursor, inicio con Windows'; File = 'extras.ps1' },
     @{ Name = 'Anti-AFK (experimental)'; File = 'antiafk.ps1' },
+    @{ Name = 'Macros: grabar y reproducir'; File = 'macros.ps1' },
     @{ Name = 'Clics de ratón reales en cada sección'; File = 'clics-reales.ps1' }
 )
 foreach ($t in $ui) {

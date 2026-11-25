@@ -48,7 +48,9 @@ public partial class MainWindow
     {
         // Iniciar/Detener, abrir ajustes o capturar el atajo no son cambios de configuración.
         if (e.OriginalSource == StartButton || e.OriginalSource == HotkeyButton
-            || e.OriginalSource == SettingsButton || e.OriginalSource == NavClicksButton || e.OriginalSource == NavAntiAfkButton) return;
+            || e.OriginalSource == SettingsButton || e.OriginalSource == NavClicksButton || e.OriginalSource == NavAntiAfkButton
+            || e.OriginalSource == NavMacrosButton || e.OriginalSource == RecordMacroButton || e.OriginalSource == PlayMacroButton
+            || e.OriginalSource == RecordHotkeyButton || e.OriginalSource == PlayHotkeyButton) return;
         ScheduleSave();
     }
 
@@ -83,6 +85,31 @@ public partial class MainWindow
         AfkMinutesBox.Text = Compat.Clamp(p.AntiAfkMinutes, 1, 18).ToString();
         _antiAfk.SetMinutes(p.AntiAfkMinutes);
         RefreshAfkTarget();
+        // Macros
+        (p.MacroRepeat switch
+        {
+            Macros.MacroRepeat.Count => MacroCountRadio,
+            Macros.MacroRepeat.Forever => MacroForeverRadio,
+            Macros.MacroRepeat.Time => MacroTimeRadio,
+            _ => MacroOnceRadio,
+        }).IsChecked = true;
+        MacroCountBox.Text = Compat.Clamp(p.MacroCount, 1, 999_999).ToString();
+        MacroMinutesBox.Text = Compat.Clamp(p.MacroMinutes, 1, 9_999).ToString();
+        (p.MacroSpeed switch
+        {
+            <= 0.5 => MacroSpeedHalf,
+            >= 10 => MacroSpeed10,
+            >= 4 => MacroSpeed4,
+            >= 2 => MacroSpeed2,
+            _ => MacroSpeed1,
+        }).IsChecked = true;
+        (p.MacroMode switch
+        {
+            Macros.MacroRecordMode.Mouse => MacroModeMouse,
+            Macros.MacroRecordMode.Keys => MacroModeKeys,
+            _ => MacroModeAll,
+        }).IsChecked = true;
+
         ExperimentalSwitch.IsChecked = p.Experimental;
         AntiAfkSwitch.IsChecked = p.Experimental && p.AntiAfkEnabled;
 
@@ -117,6 +144,19 @@ public partial class MainWindow
         WindowLeft = double.IsNaN(Left) ? _data.Prefs.WindowLeft : Left,
         WindowTop = double.IsNaN(Top) ? _data.Prefs.WindowTop : Top,
         Experimental = ExperimentalSwitch.IsChecked == true,
+        MacroRecordVk = _recordHotkeys?.Current.VirtualKey ?? _data.Prefs.MacroRecordVk,
+        MacroRecordModifiers = _recordHotkeys?.Current.Modifiers ?? _data.Prefs.MacroRecordModifiers,
+        MacroPlayVk = _playHotkeys?.Current.VirtualKey ?? _data.Prefs.MacroPlayVk,
+        MacroPlayModifiers = _playHotkeys?.Current.Modifiers ?? _data.Prefs.MacroPlayModifiers,
+        MacroName = _macro?.Name ?? _data.Prefs.MacroName,
+        MacroRepeat = MacroCountRadio.IsChecked == true ? Macros.MacroRepeat.Count
+                    : MacroForeverRadio.IsChecked == true ? Macros.MacroRepeat.Forever
+                    : MacroTimeRadio.IsChecked == true ? Macros.MacroRepeat.Time
+                    : Macros.MacroRepeat.Once,
+        MacroCount = (int)Compat.Clamp(Number(MacroCountBox), 1, 999_999),
+        MacroMinutes = (int)Compat.Clamp(Number(MacroMinutesBox), 1, 9_999),
+        MacroSpeed = SelectedMacroSpeed,
+        MacroMode = SelectedRecordMode,
         AntiAfkEnabled = AntiAfkSwitch.IsChecked == true,
         AntiAfkMinutes = (int)Compat.Clamp(Number(AfkMinutesBox), 1, 18),
         AntiAfkProcess = _antiAfk.ProcessName,

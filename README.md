@@ -12,8 +12,8 @@ español si Windows está en español; inglés en cualquier otro idioma.
 2. En **Clics** (primer icono de la barra lateral) elige **Intervalo**, **Botón**, **Tipo** y **Repetir**.
 3. Pulsa **Iniciar** o **F6**. Vuelve a pulsar **F6** para parar.
 
-La ventana tiene una barra lateral con una sección por función: **Clics**, **Anti-AFK** (solo si
-activas las funciones experimentales) y, abajo, **Ajustes**. Un punto verde en el icono indica que esa
+La ventana tiene una barra lateral con una sección por función: **Clics**, **Macros**, **Anti-AFK**
+(solo si activas las funciones experimentales) y, abajo, **Ajustes**. Un punto verde en el icono indica que esa
 función está en marcha.
 
 La app no clica sobre su propia ventana, así que puedes iniciar con el ratón, mover el cursor
@@ -35,9 +35,12 @@ a donde quieras y volver para pulsar **Detener**.
 | **Puntos → Velocidad** | Reproduce la secuencia a ×0,5 · ×1 · ×2 · ×4 |
 | **Marcador** | Arrástralo para moverlo; clic para editar botón, tipo, espera, orden o borrarlo |
 | **Perfil** (barra de título) | Cambiar, crear (copia del actual), renombrar o eliminar configuraciones |
-| **⚙ Ajustes → Atajo** | Clic en la tecla y pulsa otra (teclas, combinaciones o botones laterales del ratón). Modo *Alternar* o *Mantener* |
+| **⚙ Ajustes → Atajo** | Clic en la tecla y pulsa otra (teclas, combinaciones o botones laterales del ratón). Modo *Alternar* o *Mantener*. También los atajos de grabar (F7) y reproducir (F8) macros |
 | **⚙ Ajustes → Clics** | Variación aleatoria del intervalo, desvío del punto fijo, retardo de inicio, pausar si cambia la ventana activa, devolver el ratón a su sitio tras cada clic (posición fija o puntos) |
 | **⚙ Ajustes → General** | Parar al llevar el ratón a una esquina, minimizar/cerrar a la bandeja, iniciar con Windows (oculto en la bandeja), fondo translúcido |
+| **Macros → Grabar** (F7) | Graba ratón (movimientos, clics, arrastres, rueda) y teclado con sus tiempos reales. La ventana se oculta y aparece una barra flotante; F7 o "Terminar" acaban. Se puede grabar todo, solo el ratón o solo las teclas. No graba los clics sobre AutoClik ni las teclas de los atajos, y quita la espera inicial |
+| **Macros → Reproducir** (F8) | Una vez, N veces, sin fin o durante X minutos, a ×0,5 · ×1 · ×2 · ×4 · ×10. Las teclas se envían como teclas físicas (funcionan en juegos). F8, la esquina de emergencia o Detener la paran, y nunca deja teclas ni botones pulsados |
+| **Macros → Macro** | Biblioteca: elegir, renombrar, duplicar, exportar e importar (archivos `.autoclik`) o eliminar. Se guardan en `%AppData%\AutoClik\macros` |
 | **⚙ Ajustes → Experimental** | Muestra las funciones en pruebas (de momento, el Anti-AFK). Apagado por defecto |
 | **Anti-AFK** (experimental) | Cada X minutos (1–18) trae al frente la ventana elegida (p. ej. Roblox) un instante, hace un clic en el punto elegido y te devuelve a tu ventana con el ratón donde estaba. Espera a que dejes de usar el PC para no robarte teclas. **Probar ahora** hace un clic al momento |
 | **⚙ Ajustes → Acerca de** | Versión y botón para abrir la carpeta de ajustes y del registro de errores |
@@ -85,6 +88,7 @@ Los textos de la interfaz están en `src/Autoclicker/Localization/Strings.cs` (e
 src/Autoclicker/
   Engine/       motor de clics (hilo dedicado, temporizador de alta resolución, SendInput)
   Input/        atajo global, parada en esquina, grabadora, anti-AFK
+  Macros/       macros: modelo, biblioteca, grabadora (hooks) y reproductor
   Markers/      puntos y marcadores en pantalla
   Persistence/  perfiles y guardado en JSON
   Interop/      Win32: fondo translúcido, bandeja, logo, inicio con Windows

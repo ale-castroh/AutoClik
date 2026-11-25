@@ -47,6 +47,12 @@ Click "StartButton"; $on = Tog 'StartButton'
 Click "StartButton"; $off = Tog 'StartButton'
 "2) Iniciar=$on Detener=$off (esperado On / Off)"
 
+# Macros (sin macros: sus opciones también deben responder al ratón)
+Click "NavMacrosButton"
+Click "MacroSpeed2"; Click "MacroModeMouse"; Click "MacroCountRadio"
+"2b) Macros: sección=$(Tog 'NavMacrosButton') x2=$(Sel 'MacroSpeed2') Ratón=$(Sel 'MacroModeMouse') Veces=$(Sel 'MacroCountRadio') (esperado On, True x3)"
+Click "MacroSpeed1"; Click "MacroModeAll"; Click "MacroOnceRadio"
+
 # Ajustes: algo visible arriba, y luego bajar con la RUEDA del ratón hasta "Funciones experimentales"
 Click "SettingsButton"
 Click "HoldModeRadio"; $hold = Sel 'HoldModeRadio'

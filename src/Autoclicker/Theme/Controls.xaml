@@ -227,6 +227,61 @@
         </Setter>
     </Style>
 
+    <!-- ============ Botón Grabar (secundario, con punto rojo y tecla) ============ -->
+    <!-- Content = "Grabar"; t:Ui.CheckedText = "Terminar"; t:Ui.KeyText = tecla (F7). -->
+    <Style x:Key="RecordToggleStyle" TargetType="ToggleButton">
+        <Setter Property="Height" Value="38" />
+        <Setter Property="FontSize" Value="13.5" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid SnapsToDevicePixels="True">
+                        <Border x:Name="Bg" CornerRadius="6" BorderThickness="1"
+                                Background="{DynamicResource ControlBackgroundBrush}" BorderBrush="{DynamicResource ControlBorderBrush}" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Grid Width="12" Height="12" VerticalAlignment="Center" Margin="0,0,9,0">
+                                <Ellipse x:Name="RecIcon" Width="10" Height="10" Fill="#E5484D" />
+                                <Rectangle x:Name="StopIcon" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="#E5484D" Visibility="Collapsed" />
+                            </Grid>
+                            <TextBlock x:Name="Label" VerticalAlignment="Center"
+                                       Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" />
+                            <Border x:Name="Key" Margin="10,0,0,0" Padding="6,1,6,2" CornerRadius="4" VerticalAlignment="Center"
+                                    Background="{DynamicResource ControlHoverBrush}">
+                                <TextBlock FontFamily="{StaticResource NumberFont}" FontSize="12" FontWeight="Normal"
+                                           Text="{Binding (t:Ui.KeyText), RelativeSource={RelativeSource TemplatedParent}}" />
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding (t:Ui.KeyText), RelativeSource={RelativeSource Self}}" Value="">
+                            <Setter TargetName="Key" Property="Visibility" Value="Collapsed" />
+                        </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtlePressedBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bg" Property="BorderBrush" Value="#E5484D" />
+                            <Setter TargetName="RecIcon" Property="Visibility" Value="Collapsed" />
+                            <Setter TargetName="StopIcon" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="Label" Property="Text"
+                                    Value="{Binding (t:Ui.CheckedText), RelativeSource={RelativeSource TemplatedParent}}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ============ Control segmentado (RadioButtons) ============ -->
     <!-- Fondo hundido; la opción elegida se "eleva" en gris (no en color de acento). -->
     <Style x:Key="SegmentedContainerStyle" TargetType="Border">
