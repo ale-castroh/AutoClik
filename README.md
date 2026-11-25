@@ -1,7 +1,8 @@
 # Autoclicker
 
 Autoclicker para Windows 10/11: minimalista, preciso (error medio ≈ 0,1 ms, hasta 1000 clics/s)
-y con tema claro/oscuro que sigue al de Windows.
+y con tema claro/oscuro que sigue al de Windows. Idioma automático: español si Windows está en
+español; inglés en cualquier otro idioma.
 
 ## Uso rápido
 
@@ -62,7 +63,10 @@ powershell -File build.ps1                    # genera dist\Autoclicker.exe (aut
 powershell -NoProfile -File tests\run-all.ps1 # batería de pruebas (mueve el ratón ~40 s)
 ```
 
-Opciones de línea de comandos (pruebas): `--theme=light|dark`, `--data=<carpeta>`.
+Opciones de línea de comandos (pruebas): `--theme=light|dark`, `--lang=es|en`, `--data=<carpeta>`.
+Antes de `run-all.ps1`, cierra cualquier Autoclicker abierto (las pruebas pulsan F6).
+
+Los textos de la interfaz están en `src/Autoclicker/Localization/Strings.cs` (español e inglés).
 
 ## Estructura
 

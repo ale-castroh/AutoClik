@@ -4,6 +4,8 @@ using System.Windows.Interop;
 using System.Windows.Threading;
 using static Autoclicker.Interop.NativeMethods;
 
+using Autoclicker.Localization;
+
 namespace Autoclicker.Views;
 
 /// <summary>Barra flotante "Grabando" (no roba el foco, no aparece en Alt+Tab).</summary>
@@ -18,10 +20,11 @@ public partial class RecordingBar : Window
     public RecordingBar(string stopKeys)
     {
         InitializeComponent();
-        HintText.Text = $"{stopKeys} para terminar";
+        HintText.Text = Strings.F("ToFinish", stopKeys);
         _timer = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(250) };
         _timer.Tick += (_, _) => Refresh();
         _timer.Start();
+        Refresh();
         Loaded += (_, _) => PlaceTopCenter();
         Closed += (_, _) => _timer.Stop();
     }
@@ -35,7 +38,7 @@ public partial class RecordingBar : Window
     private void Refresh()
     {
         TimeSpan t = Stopwatch.GetElapsedTime(_started);
-        InfoText.Text = $"{_count} {(_count == 1 ? "clic" : "clics")} · {(int)t.TotalMinutes}:{t.Seconds:00}";
+        InfoText.Text = $"{_count} {Strings.Clicks(_count)} · {(int)t.TotalMinutes}:{t.Seconds:00}";
     }
 
     protected override void OnSourceInitialized(EventArgs e)

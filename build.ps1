@@ -8,7 +8,10 @@ $dist = Join-Path $root 'dist'
 $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
 
 Write-Host "Compilando Autoclicker (Release, autónomo)..." -ForegroundColor Cyan
-if (Test-Path $dist) { Remove-Item -Recurse -Force $dist }
+if (Test-Path $dist) {
+    try { Remove-Item -Recurse -Force $dist -ErrorAction Stop }
+    catch { throw "No se puede reemplazar dist\Autoclicker.exe: está abierto. Cierra Autoclicker (también desde la bandeja) y vuelve a intentarlo." }
+}
 
 dotnet publish (Join-Path $root 'src\Autoclicker') -c Release -o $dist -nologo -v q
 if ($LASTEXITCODE -ne 0) { throw "La compilación ha fallado." }

@@ -102,6 +102,11 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 1.1.0 — Idioma automático ✅
+Español si Windows está en español, inglés en cualquier otro idioma (`Localization/Strings.cs`,
+`{l:T Clave}` en XAML). Forzable con `--lang=es|en` o `AUTOCLICKER_LANG`. El perfil inicial se
+llama "Predeterminado"/"Default" según el idioma; los nombres ya guardados no cambian.
+
 ## Fase 7 — Pruebas y entrega ✅
 - `build.ps1` → `dist\Autoclicker.exe`: **un solo archivo autónomo** (incluye .NET), 61 MB comprimido.
   La primera ejecución tarda ~3–4 s (se descomprime una vez en `%TEMP%\.net`); después ~0,8 s.

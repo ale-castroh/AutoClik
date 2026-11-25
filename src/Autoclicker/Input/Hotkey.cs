@@ -1,5 +1,7 @@
 using static Autoclicker.Interop.NativeMethods;
 
+using Autoclicker.Localization;
+
 namespace Autoclicker.Input;
 
 /// <summary>Un atajo: tecla virtual (o botón lateral del ratón) + modificadores MOD_*.</summary>
@@ -14,7 +16,7 @@ public readonly record struct Hotkey(int VirtualKey, uint Modifiers)
         var parts = new List<string>(5);
         if ((Modifiers & MOD_CONTROL) != 0) parts.Add("Ctrl");
         if ((Modifiers & MOD_ALT) != 0) parts.Add("Alt");
-        if ((Modifiers & MOD_SHIFT) != 0) parts.Add("Mayús");
+        if ((Modifiers & MOD_SHIFT) != 0) parts.Add(Strings.T("Shift"));
         if ((Modifiers & MOD_WIN) != 0) parts.Add("Win");
         parts.Add(KeyName(VirtualKey));
         return string.Join(" + ", parts);
@@ -42,8 +44,8 @@ public readonly record struct Hotkey(int VirtualKey, uint Modifiers)
     /// <summary>Nombre de la tecla en el idioma del teclado de Windows.</summary>
     public static unsafe string KeyName(int vk)
     {
-        if (vk == VK_XBUTTON1) return "Ratón X1";
-        if (vk == VK_XBUTTON2) return "Ratón X2";
+        if (vk == VK_XBUTTON1) return Strings.T("MouseX1");
+        if (vk == VK_XBUTTON2) return Strings.T("MouseX2");
         if (vk is >= 0x70 and <= 0x87) return $"F{vk - 0x6F}";
 
         uint scan = MapVirtualKey((uint)vk, 0);
@@ -57,6 +59,6 @@ public readonly record struct Hotkey(int VirtualKey, uint Modifiers)
             string name = new(buffer, 0, len);
             return name.Length == 1 ? name.ToUpperInvariant() : char.ToUpper(name[0]) + name[1..].ToLowerInvariant();
         }
-        return $"Tecla {vk:X2}";
+        return Strings.F("KeyHex", vk);
     }
 }

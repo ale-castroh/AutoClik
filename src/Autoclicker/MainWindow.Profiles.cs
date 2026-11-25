@@ -6,6 +6,8 @@ using Autoclicker.Markers;
 using Autoclicker.Persistence;
 using Autoclicker.Views;
 
+using Autoclicker.Localization;
+
 namespace Autoclicker;
 
 /// <summary>Guardado automático y perfiles de la ventana principal.</summary>
@@ -209,7 +211,7 @@ public partial class MainWindow
     private void RefreshProfileUi()
     {
         ProfileNameText.Text = _data.CurrentProfile;
-        ProfileButton.ToolTip = $"Perfil: {_data.CurrentProfile} · clic para cambiar";
+        ProfileButton.ToolTip = Strings.F("ProfileTip", _data.CurrentProfile);
     }
 
     private void ProfileButton_Click(object sender, RoutedEventArgs e)
@@ -224,9 +226,9 @@ public partial class MainWindow
         }
 
         menu.Items.Add(new Separator());
-        menu.Items.Add(MenuAction("Nuevo perfil…", "", NewProfile));
-        menu.Items.Add(MenuAction("Renombrar…", "", RenameProfile));
-        var delete = MenuAction("Eliminar perfil", "", DeleteProfile);
+        menu.Items.Add(MenuAction(Strings.T("NewProfile"), "", NewProfile));
+        menu.Items.Add(MenuAction(Strings.T("Rename"), "", RenameProfile));
+        var delete = MenuAction(Strings.T("DeleteProfile"), "", DeleteProfile);
         delete.IsEnabled = _data.Profiles.Count > 1;
         menu.Items.Add(delete);
 
@@ -253,7 +255,7 @@ public partial class MainWindow
 
     private void NewProfile()
     {
-        string? name = NameDialog.AskName(this, "Nuevo perfil (copia del actual)", SuggestName(), ValidateNew);
+        string? name = NameDialog.AskName(this, Strings.T("NewProfileTitle"), SuggestName(), ValidateNew);
         if (name == null) return;
 
         StartButton.IsChecked = false;
@@ -267,7 +269,7 @@ public partial class MainWindow
     private void RenameProfile()
     {
         string current = _data.CurrentProfile;
-        string? name = NameDialog.AskName(this, "Renombrar perfil", current,
+        string? name = NameDialog.AskName(this, Strings.T("RenameTitle"), current,
             n => n == current ? null : ValidateNew(n));
         if (name == null || name == current) return;
 
@@ -283,8 +285,8 @@ public partial class MainWindow
     {
         if (_data.Profiles.Count <= 1) return;
         string current = _data.CurrentProfile;
-        if (!NameDialog.Confirm(this, "Eliminar perfil",
-                $"Se eliminará «{current}» con sus puntos. No se puede deshacer.", "Eliminar"))
+        if (!NameDialog.Confirm(this, Strings.T("DeleteProfile"),
+                Strings.F("DeleteConfirm", current), Strings.T("Delete")))
             return;
 
         StartButton.IsChecked = false;
@@ -297,14 +299,14 @@ public partial class MainWindow
 
     private string? ValidateNew(string name) =>
         _data.Profiles.Keys.Any(k => string.Equals(k, name, StringComparison.CurrentCultureIgnoreCase))
-            ? "Ya existe un perfil con ese nombre"
+            ? Strings.T("ProfileExists")
             : null;
 
     private string SuggestName()
     {
         for (int i = _data.Profiles.Count + 1; ; i++)
         {
-            string candidate = $"Perfil {i}";
+            string candidate = Strings.F("ProfileN", i);
             if (ValidateNew(candidate) == null) return candidate;
         }
     }

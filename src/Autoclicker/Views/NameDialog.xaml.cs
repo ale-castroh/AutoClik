@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Input;
 
+using Autoclicker.Localization;
+
 namespace Autoclicker.Views;
 
 /// <summary>Diálogo pequeño para escribir un nombre, o para confirmar una acción.</summary>
@@ -42,7 +44,7 @@ public partial class NameDialog : Window
     /// <summary>Pide un nombre. <paramref name="validate"/> devuelve un mensaje de error o null si vale.</summary>
     public static string? AskName(Window owner, string title, string initial, Func<string, string?> validate)
     {
-        var dialog = new NameDialog(title, null, initial, "Guardar", validate, confirmOnly: false) { Owner = owner };
+        var dialog = new NameDialog(title, null, initial, Strings.T("Save"), validate, confirmOnly: false) { Owner = owner };
         return dialog.ShowDialog() == true ? dialog.ResultName : null;
     }
 
@@ -56,7 +58,7 @@ public partial class NameDialog : Window
     {
         if (!_confirmOnly)
         {
-            string? error = ResultName.Length == 0 ? "Escribe un nombre" : _validate?.Invoke(ResultName);
+            string? error = ResultName.Length == 0 ? Strings.T("NameRequired") : _validate?.Invoke(ResultName);
             if (error != null)
             {
                 ErrorText.Text = error;

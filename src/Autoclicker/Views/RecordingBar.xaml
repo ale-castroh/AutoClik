@@ -1,6 +1,7 @@
 <Window x:Class="Autoclicker.Views.RecordingBar"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:Autoclicker.Localization"
         Title="Grabando"
         SizeToContent="WidthAndHeight" Left="-32000" Top="-32000"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
@@ -29,17 +30,17 @@
                 </Ellipse.Triggers>
             </Ellipse>
 
-            <TextBlock Text="Grabando" Margin="10,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <TextBlock x:Name="InfoText" Text="0 clics · 0:00" Margin="10,0,0,0" VerticalAlignment="Center"
+            <TextBlock Text="{l:T Recording}" Margin="10,0,0,0" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <TextBlock x:Name="InfoText" Text="" Margin="10,0,0,0" VerticalAlignment="Center"
                        FontFamily="{StaticResource DisplayFont}" Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock x:Name="HintText" Text="Esc para terminar" Margin="12,0,0,0" VerticalAlignment="Center"
+            <TextBlock x:Name="HintText" Text="" Margin="12,0,0,0" VerticalAlignment="Center"
                        Style="{StaticResource CaptionStyle}" Foreground="{DynamicResource TextTertiaryBrush}" />
 
             <Button x:Name="StopButton" Margin="14,0,0,0" Height="30" Padding="12,0" Click="Stop_Click"
                     Style="{StaticResource SecondaryButtonStyle}">
                 <StackPanel Orientation="Horizontal">
                     <Border Width="9" Height="9" CornerRadius="2" Background="#E5484D" VerticalAlignment="Center" />
-                    <TextBlock Text="Terminar" Margin="7,0,0,0" VerticalAlignment="Center" />
+                    <TextBlock Text="{l:T Finish}" Margin="7,0,0,0" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>
         </StackPanel>

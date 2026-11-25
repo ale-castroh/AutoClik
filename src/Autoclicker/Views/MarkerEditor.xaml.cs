@@ -7,6 +7,8 @@ using Autoclicker.Engine;
 using Autoclicker.Markers;
 using static Autoclicker.Interop.NativeMethods;
 
+using Autoclicker.Localization;
+
 namespace Autoclicker.Views;
 
 /// <summary>Panel flotante junto a un marcador para editar su botón, tipo, espera y orden.</summary>
@@ -27,7 +29,7 @@ public partial class MarkerEditor : Window
         _point = point;
         _markerHwnd = markerHwnd;
 
-        TitleText.Text = $"Punto {number}";
+        TitleText.Text = Strings.F("PointN", number);
         CoordsText.Text = $"X {point.X} · Y {point.Y}";
 
         (point.Button switch

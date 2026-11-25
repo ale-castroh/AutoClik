@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:Autoclicker.Localization">
 
     <!-- ============ Tipografía ============ -->
     <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>
@@ -110,12 +111,12 @@
     <Style x:Key="TitleBarPinStyle" TargetType="ToggleButton" BasedOn="{StaticResource TitleBarButtonStyle}">
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Content" Value="&#xE718;" />
-        <Setter Property="ToolTip" Value="Mantener siempre visible" />
+        <Setter Property="ToolTip" Value="{l:T PinTip}" />
         <Style.Triggers>
             <Trigger Property="IsChecked" Value="True">
                 <Setter Property="Content" Value="&#xE840;" />
                 <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
-                <Setter Property="ToolTip" Value="Dejar de estar siempre visible" />
+                <Setter Property="ToolTip" Value="{l:T UnpinTip}" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -183,7 +184,7 @@
                                 <TextBlock x:Name="Glyph" Text="&#xE768;" FontFamily="{StaticResource IconFont}"
                                            FontSize="30" HorizontalAlignment="Center"
                                            Foreground="{DynamicResource OnAccentBrush}" />
-                                <TextBlock x:Name="Label" Text="Iniciar" Margin="0,6,0,0" FontSize="14"
+                                <TextBlock x:Name="Label" Text="{l:T StartBtn}" Margin="0,6,0,0" FontSize="14"
                                            FontWeight="SemiBold" HorizontalAlignment="Center"
                                            Foreground="{DynamicResource OnAccentBrush}" />
                             </StackPanel>
@@ -243,7 +244,7 @@
 
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Glyph" Property="Text" Value="&#xE71A;" />
-                            <Setter TargetName="Label" Property="Text" Value="Detener" />
+                            <Setter TargetName="Label" Property="Text" Value="{l:T StopBtn}" />
                             <Trigger.EnterActions>
                                 <BeginStoryboard x:Name="PulseStoryboard">
                                     <!-- 30 fps bastan para la onda: menos CPU mientras clica -->
@@ -495,7 +496,7 @@
         <Setter Property="Height" Value="32" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontFamily" Value="{StaticResource DisplayFont}" />
-        <Setter Property="ToolTip" Value="Clic para cambiar el atajo" />
+        <Setter Property="ToolTip" Value="{l:T KeyCapTip}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">

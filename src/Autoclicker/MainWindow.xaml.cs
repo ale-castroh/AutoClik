@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -14,6 +14,8 @@ using Autoclicker.Markers;
 using Autoclicker.Theme;
 using Autoclicker.Views;
 using static Autoclicker.Interop.NativeMethods;
+
+using Autoclicker.Localization;
 
 namespace Autoclicker;
 
@@ -119,7 +121,7 @@ public partial class MainWindow : Window
         _hotkeys.Released += OnHotkeyReleased;
         var savedHotkey = new Hotkey(_data.Prefs.HotkeyVk, _data.Prefs.HotkeyModifiers);
         if (!_hotkeys.TrySet(savedHotkey))
-            _hotkeyError = $"{savedHotkey} lo usa otra aplicación: elige otro";
+            _hotkeyError = Strings.F("HotkeyTakenPick", savedHotkey);
 
         _tray = new TrayIcon(_hwnd);
         _tray.LeftClick += ToggleWindowFromTray;
@@ -218,7 +220,7 @@ public partial class MainWindow : Window
     {
         bool running = StartButton.IsChecked == true;
         Icon = IconFactory.Render(64, ThemeManager.Accent, active: false);
-        _tray?.Update(ThemeManager.Accent, running, running ? "Autoclicker · Clicando" : "Autoclicker · Detenido");
+        _tray?.Update(ThemeManager.Accent, running, Strings.T(running ? "TrayRunning" : "TrayStopped"));
     }
 
     // ================= Barra de título y bandeja =================
@@ -267,7 +269,7 @@ public partial class MainWindow : Window
         var menu = (ContextMenu)FindResource("TrayMenu");
         var startItem = (MenuItem)menu.Items[0];
         bool running = StartButton.IsChecked == true;
-        startItem.Header = running ? "Detener" : "Iniciar";
+        startItem.Header = Strings.T(running ? "TrayStop" : "TrayStart");
         startItem.Icon = running ? "" : "";
 
         menu.Placement = PlacementMode.MousePoint;
@@ -301,7 +303,7 @@ public partial class MainWindow : Window
 
         if (PointsPositionRadio.IsChecked == true && _markers.Count == 0)
         {
-            _notice = "Añade al menos un punto";
+            _notice = Strings.T("NeedPoint");
             Dispatcher.BeginInvoke(() => StartButton.IsChecked = false);
             return;
         }
@@ -338,7 +340,7 @@ public partial class MainWindow : Window
     {
         if (StartButton.IsChecked != true) return;
         StartButton.IsChecked = false;
-        _notice = "Parado: ratón en la esquina";
+        _notice = Strings.T("StoppedCorner");
         UpdateStatus();
     }
 
@@ -401,25 +403,25 @@ public partial class MainWindow : Window
         }
 
         CountText.Text = count.ToString("N0");
-        RateText.Text = $"{(count == 1 ? "clic" : "clics")} · {rate:0.0}/s";
+        RateText.Text = Strings.F("Rate", Strings.Clicks(count), rate);
 
         double waitLeft = (_runDelay - Stopwatch.GetElapsedTime(_runStarted, now)).TotalSeconds;
         StatusText.Text = running
-            ? waitLeft > 0 ? $"Empieza en {waitLeft:0.0} s"
-              : _engine.IsWaitingForWindow ? "Cambia a la ventana de destino"
-              : _engine.IsPaused ? "En pausa · otra ventana activa"
-              : "Clicando"
-            : _notice ?? _lastStop switch
+            ? waitLeft > 0 ? Strings.F("StartsIn", waitLeft)
+              : _engine.IsWaitingForWindow ? Strings.T("WaitingWindow")
+              : _engine.IsPaused ? Strings.T("PausedWindow")
+              : Strings.T("Clicking")
+            : _notice ?? Strings.T(_lastStop switch
             {
-                StopReason.Completed => "Completado",
-                StopReason.Error => "Error al clicar",
-                _ => "Detenido",
-            };
+                StopReason.Completed => "Completed",
+                StopReason.Error => "ClickError",
+                _ => "Stopped",
+            });
 
         string key = _hotkeys?.Current.ToString() ?? "F6";
         HotkeyHintText.Text = HoldModeRadio.IsChecked == true
-            ? $"Mantén {key} para clicar"
-            : $"{key} para {(running ? "detener" : "iniciar")}";
+            ? Strings.F("HoldHint", key)
+            : Strings.F(running ? "KeyToStop" : "KeyToStart", key);
     }
 
     // ================= Atajo =================
@@ -456,8 +458,8 @@ public partial class MainWindow : Window
         _capturingHotkey = true;
         if (_hotkeys != null) _hotkeys.Suspended = true; // que el atajo actual no salte mientras eliges
         HotkeyButton.IsChecked = true;
-        HotkeyButton.Content = "Pulsa una tecla…";
-        HotkeyNoteText.Text = "Tecla, combinación o botón lateral del ratón · Esc cancela";
+        HotkeyButton.Content = Strings.T("PressKey");
+        HotkeyNoteText.Text = Strings.T("PressKeyHint");
     }
 
     private void EndHotkeyCapture(Hotkey? chosen)
@@ -477,7 +479,7 @@ public partial class MainWindow : Window
             else
             {
                 _hotkeys.TrySet(previous);
-                _hotkeyError = $"{hotkey} lo usa otra aplicación";
+                _hotkeyError = Strings.F("HotkeyTaken", hotkey);
             }
         }
         RefreshHotkeyUi();
@@ -488,7 +490,7 @@ public partial class MainWindow : Window
     private void RefreshHotkeyUi()
     {
         HotkeyButton.Content = _hotkeys?.Current.ToString() ?? "F6";
-        HotkeyNoteText.Text = _hotkeyError ?? "Funciona aunque la ventana esté oculta";
+        HotkeyNoteText.Text = _hotkeyError ?? Strings.T("HotkeyWorksHidden");
         HotkeyNoteText.Foreground = (System.Windows.Media.Brush)FindResource(_hotkeyError != null ? "AccentBrush" : "TextSecondaryBrush");
     }
 
@@ -563,7 +565,7 @@ public partial class MainWindow : Window
     {
         bool on = PointsPositionRadio.IsChecked == true;
         _markers.Visible = on;
-        RepeatUnitText.Text = on ? "vueltas" : "clics";
+        RepeatUnitText.Text = Strings.T(on ? "UnitLaps" : "UnitClicks");
         UpdatePointsSummary();
     }
 
@@ -603,7 +605,7 @@ public partial class MainWindow : Window
         ClickRecorder.ClickRecorded += OnClickRecorded;
         ClickRecorder.Start();
 
-        _recordingBar = new RecordingBar(escOk ? $"Esc o {key}" : key);
+        _recordingBar = new RecordingBar(escOk ? Strings.F("EscOr", key) : key);
         _recordingBar.StopRequested += StopRecording;
         _recordingBar.Show();
     }
@@ -628,7 +630,7 @@ public partial class MainWindow : Window
             PointsPositionRadio.IsChecked = true;
         }
         PointsMode_Changed(this, new RoutedEventArgs()); // vuelve a mostrar los marcadores si toca
-        if (points.Count > 0) _notice = $"Grabados {points.Count} {(points.Count == 1 ? "clic" : "clics")}";
+        if (points.Count > 0) _notice = Strings.F("Recorded", points.Count, Strings.Clicks(points.Count));
 
         ShowFromTray();
         _markers.BringToFront();
@@ -646,9 +648,9 @@ public partial class MainWindow : Window
         int n = _markers.Count;
         PointsSummaryText.Text = n switch
         {
-            0 => "Sin puntos",
-            1 => "1 punto",
-            _ => $"{n} puntos",
+            0 => Strings.T("NoPoints"),
+            1 => Strings.T("OnePoint"),
+            _ => Strings.F("NPoints", n),
         };
         ClearPointsButton.IsEnabled = n > 0;
         if (n > 0 && _notice != null && StartButton.IsChecked != true)

@@ -1,11 +1,13 @@
 using Autoclicker.Engine;
 
+using Autoclicker.Localization;
+
 namespace Autoclicker.Persistence;
 
 /// <summary>Todo lo que se guarda en disco.</summary>
 public sealed class AppData
 {
-    public const string DefaultProfileName = "Predeterminado";
+    public static string DefaultProfileName => Strings.T("DefaultProfile");
 
     public int Version { get; set; } = 1;
     public string CurrentProfile { get; set; } = DefaultProfileName;

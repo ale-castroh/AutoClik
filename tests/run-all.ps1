@@ -10,6 +10,20 @@ param([string]$App = (Join-Path $PSScriptRoot '..\dist\Autoclicker.exe'))
 $ErrorActionPreference = 'Stop'
 $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
 $App = (Resolve-Path $App).Path
+
+# Las pruebas pulsan F6: con otro Autoclicker abierto, ese empezaría a clicar donde esté el ratón.
+if (Get-Process Autoclicker -ErrorAction SilentlyContinue) {
+    Write-Host "Cierra todos los Autoclicker abiertos (también el de la bandeja) antes de ejecutar las pruebas." -ForegroundColor Yellow
+    exit 1
+}
+$startedAt = Get-Date
+# Solo se cierran los procesos que hayan arrancado las propias pruebas.
+function Stop-TestProcesses {
+    Get-Process Autoclicker, Autoclicker.Bench -ErrorAction SilentlyContinue |
+        Where-Object { $_.StartTime -ge $startedAt } | Stop-Process -Force
+}
+# Las pruebas buscan botones por su texto en español: forzar el idioma de la app.
+$env:AUTOCLICKER_LANG = 'es'
 $work = Join-Path $env:TEMP 'autoclicker-tests'
 New-Item -ItemType Directory -Force $work | Out-Null
 
@@ -33,9 +47,9 @@ $ui = @(
 foreach ($t in $ui) {
     Write-Host "`n== $($t.Name)" -ForegroundColor Cyan
     Remove-Item -Recurse -Force (Join-Path $work 'data*') -ErrorAction SilentlyContinue
-    Get-Process Autoclicker, Autoclicker.Bench -ErrorAction SilentlyContinue | Stop-Process -Force
+    Stop-TestProcesses
     # Cada prueba en su propio proceso (definen tipos con el mismo nombre)
     powershell -NoProfile -File (Join-Path $PSScriptRoot "ui\$($t.File)") -AppPath $App -BenchPath $bench -Dir $work -ShotDir $work
 }
-Get-Process Autoclicker, Autoclicker.Bench -ErrorAction SilentlyContinue | Stop-Process -Force
+Stop-TestProcesses
 Write-Host "`nTerminado. Revisa que cada línea coincide con lo esperado." -ForegroundColor Green

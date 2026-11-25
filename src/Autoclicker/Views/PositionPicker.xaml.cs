@@ -4,6 +4,8 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using static Autoclicker.Interop.NativeMethods;
 
+using Autoclicker.Localization;
+
 namespace Autoclicker.Views;
 
 /// <summary>
@@ -40,7 +42,7 @@ public partial class PositionPicker : Window
     public static void PickMany(Action<int, int> onEachPoint)
     {
         var picker = new PositionPicker { _onEachPoint = onEachPoint };
-        picker.HintText.Text = "Clic para añadir punto · Esc para terminar";
+        picker.HintText.Text = Strings.T("PickManyHint");
         picker.ShowDialog();
     }
 
