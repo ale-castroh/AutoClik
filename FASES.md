@@ -102,7 +102,7 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
-## Versión 1.4.0 — Anti-AFK experimental (sin publicar)
+## Versión 1.4.0 — Anti-AFK experimental ✅
 - **Ajustes → Experimental → Anti-AFK** (`Input/AntiAfk.cs`): cada 1–18 min (15 por defecto) trae al
   frente la ventana elegida, hace UN clic real en el punto elegido y devuelve la ventana activa y el
   cursor (~150 ms; `AttachThreadInput` + `SetForegroundWindow`, clic con pausas de 15/25 ms porque
