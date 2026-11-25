@@ -84,4 +84,5 @@ src/Autoclicker/
 tests/
   Autoclicker.Bench/  precisión del motor y clics reales sobre una ventana de prueba
 tools/make-icon.ps1   regenera el icono
+CLAUDE.md             contexto y reglas del proyecto para Claude Code (se lee solo al abrir la carpeta)
 ```
