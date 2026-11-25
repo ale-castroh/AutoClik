@@ -76,6 +76,12 @@ public partial class MainWindow
         PinButton.IsChecked = p.Pinned;
         (p.HotkeyHoldMode ? HoldModeRadio : ToggleModeRadio).IsChecked = true;
 
+        // "Iniciar con Windows" no va en settings.json: lo que manda es el registro.
+        _syncingAutostart = true;
+        StartWithWindowsSwitch.IsChecked = Interop.Autostart.IsEnabled;
+        _syncingAutostart = false;
+        Interop.Autostart.RefreshPath();
+
         // Posición de la ventana, solo si sigue dentro del escritorio (p. ej. se quitó un monitor).
         if (p.WindowLeft is double left && p.WindowTop is double top &&
             left >= SystemParameters.VirtualScreenLeft && top >= SystemParameters.VirtualScreenTop &&
@@ -100,6 +106,20 @@ public partial class MainWindow
         WindowLeft = double.IsNaN(Left) ? _data.Prefs.WindowLeft : Left,
         WindowTop = double.IsNaN(Top) ? _data.Prefs.WindowTop : Top,
     };
+
+    private bool _syncingAutostart;
+
+    private void StartWithWindows_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_syncingAutostart) return;
+        bool wanted = StartWithWindowsSwitch.IsChecked == true;
+        if (!Interop.Autostart.Set(wanted))
+        {
+            _syncingAutostart = true;
+            StartWithWindowsSwitch.IsChecked = !wanted; // no se pudo: mostrar el estado real
+            _syncingAutostart = false;
+        }
+    }
 
     // ================= Perfil <-> controles =================
 
@@ -147,11 +167,13 @@ public partial class MainWindow
         JitterBox.Text = p.JitterPercent.ToString();
         DelayBox.Text = p.StartDelaySeconds.ToString();
         LockWindowSwitch.IsChecked = p.LockToWindow;
+        RestoreCursorSwitch.IsChecked = p.RestoreCursor;
 
         // Primero los puntos, luego el modo (que decide si se ven).
         _markers.Load((p.Points ?? []).Select(d => new MarkerPoint
         {
             X = d.X, Y = d.Y, Button = d.Button, Kind = d.Kind, DelayMs = d.DelayMs, HoldMs = d.HoldMs,
+            EndX = d.EndX, EndY = d.EndY,
         }));
         (p.Speed switch
         {
@@ -199,11 +221,13 @@ public partial class MainWindow
         Points = _markers.Points.Select(m => new PointData
         {
             X = m.X, Y = m.Y, Button = m.Button, Kind = m.Kind, DelayMs = m.DelayMs, HoldMs = m.HoldMs,
+            EndX = m.EndX, EndY = m.EndY,
         }).ToList(),
         Speed = SelectedSpeed,
         JitterPercent = (int)Number(JitterBox),
         StartDelaySeconds = (int)Number(DelayBox),
         LockToWindow = LockWindowSwitch.IsChecked == true,
+        RestoreCursor = RestoreCursorSwitch.IsChecked == true,
     };
 
     // ================= Menú de perfiles =================

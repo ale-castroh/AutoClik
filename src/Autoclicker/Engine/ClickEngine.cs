@@ -37,6 +37,9 @@ public sealed class ClickEngine : IDisposable
 
     public bool IsRunning { get { lock (_gate) return _thread != null; } }
 
+    /// <summary>Excepción que paró la última sesión (StopReason.Error); null si no hubo.</summary>
+    public Exception? LastError { get; private set; }
+
     /// <summary>Clics hechos en la sesión actual (o la última).</summary>
     public long ClickCount => Interlocked.Read(ref _clickCount);
 
@@ -54,6 +57,7 @@ public sealed class ClickEngine : IDisposable
             _stopRequested = false;
             _paused = false;
             _lockedWindow = 0;
+            LastError = null;
             _stopEvent.Reset();
             Interlocked.Exchange(ref _clickCount, 0);
 
@@ -144,8 +148,9 @@ public sealed class ClickEngine : IDisposable
                 if (now - next > period) next = now;
             }
         }
-        catch
+        catch (Exception ex)
         {
+            LastError = ex;
             reason = StopReason.Error;
         }
         finally
@@ -190,6 +195,8 @@ public sealed class ClickEngine : IDisposable
             Kind = p.Kind ?? s.Kind,
             Interval = TimeSpan.FromMilliseconds(Math.Max((p.DelayMs ?? s.Interval.TotalMilliseconds) / speed, 1)),
             HoldDuration = TimeSpan.FromMilliseconds(Math.Max((p.HoldMs ?? s.HoldDuration.TotalMilliseconds) / speed, 1)),
+            DragToX = p.EndX,
+            DragToY = p.EndY,
             Points = null,
         }).ToArray();
     }
@@ -199,13 +206,43 @@ public sealed class ClickEngine : IDisposable
         if (ClickOverride != null) return ClickOverride(s);
         if (!MouseInput.TryGetTarget(s, random, out var p)) return false;
 
-        if (s.Kind != ClickKind.Hold) return MouseInput.Send(s, p, down: true, up: true);
+        // Dónde estaba el cursor, para devolverlo ahí al soltar.
+        EngineNative.POINT? restore = null;
+        if (s.RestoreCursor && s.UseFixedPosition && EngineNative.GetCursorPos(out var original) != 0)
+            restore = original;
 
-        // Mantener pulsado: si se pide parar durante la pulsación, se suelta enseguida
-        // (nunca se deja un botón "atascado").
+        if (s.Kind is ClickKind.Single or ClickKind.Double)
+            return MouseInput.Send(s, p, down: true, up: true, restore);
+
+        // Mantener pulsado o arrastrar: si se pide parar durante la pulsación, se suelta
+        // enseguida (nunca se deja un botón "atascado").
         MouseInput.Send(s, p, down: true, up: false);
-        WaitUntil(Stopwatch.GetTimestamp() + ToTicks(s.HoldDuration, freq), timer, handles, freq, spinTicks);
-        MouseInput.Send(s, p, down: false, up: true);
+        long start = Stopwatch.GetTimestamp();
+        long end = start + ToTicks(s.HoldDuration, freq);
+
+        if (s.Kind == ClickKind.Drag && s.DragToX is int toX && s.DragToY is int toY)
+        {
+            // El destino se desplaza igual que el origen (desvío aleatorio incluido).
+            var from = p;
+            var to = new EngineNative.POINT { X = toX + (p.X - s.X), Y = toY + (p.Y - s.Y) };
+            int steps = Compat.Clamp((int)(s.HoldDuration.TotalMilliseconds / 10), 1, 500);
+            for (int i = 1; i <= steps; i++)
+            {
+                if (!WaitUntil(start + (end - start) * i / steps, timer, handles, freq, spinTicks)) break;
+                p = new EngineNative.POINT
+                {
+                    X = from.X + (int)Math.Round((to.X - from.X) * (double)i / steps),
+                    Y = from.Y + (int)Math.Round((to.Y - from.Y) * (double)i / steps),
+                };
+                MouseInput.MoveCursor(p);
+            }
+        }
+        else
+        {
+            WaitUntil(end, timer, handles, freq, spinTicks);
+        }
+
+        MouseInput.Send(s, p, down: false, up: true, restore);
         return true;
     }
 

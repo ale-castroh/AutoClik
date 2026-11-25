@@ -18,10 +18,14 @@ public static unsafe class ClickRecorder
     /// <summary>Pulsación más larga que esto = "mantener" al reproducir.</summary>
     private const int HoldThresholdMs = 300;
 
+    /// <summary>Si al soltar el ratón está a más de esto del punto donde se pulsó = arrastre.</summary>
+    private const int DragThresholdPx = 12;
+
     private sealed class Press
     {
         public MouseButtonKind Button;
         public int X, Y;
+        public int EndX, EndY;
         public long Down, Up;
     }
 
@@ -62,15 +66,18 @@ public static unsafe class ClickRecorder
         for (int i = 0; i < done.Count; i++)
         {
             Press p = done[i];
-            int holdMs = (int)((p.Up - p.Down) * 1000 / freq);
-            bool hold = holdMs >= HoldThresholdMs;
+            int holdMs = Math.Max(1, (int)((p.Up - p.Down) * 1000 / freq));
+            bool drag = Math.Abs(p.EndX - p.X) + Math.Abs(p.EndY - p.Y) >= DragThresholdPx;
+            bool hold = !drag && holdMs >= HoldThresholdMs;
             points.Add(new MarkerPoint
             {
                 X = p.X,
                 Y = p.Y,
                 Button = p.Button,
-                Kind = hold ? ClickKind.Hold : ClickKind.Single,
-                HoldMs = hold ? holdMs : null,
+                Kind = drag ? ClickKind.Drag : hold ? ClickKind.Hold : ClickKind.Single,
+                HoldMs = drag || hold ? holdMs : null,
+                EndX = drag ? p.EndX : null,
+                EndY = drag ? p.EndY : null,
                 // Espera hasta el siguiente clic; el último usa el intervalo general.
                 DelayMs = i + 1 < done.Count ? Math.Max(1, (int)((done[i + 1].Down - p.Down) * 1000 / freq)) : null,
             });
@@ -96,9 +103,9 @@ public static unsafe class ClickRecorder
                     case WM_LBUTTONDOWN: OnDown(MouseButtonKind.Left, info->pt, now); break;
                     case WM_RBUTTONDOWN: OnDown(MouseButtonKind.Right, info->pt, now); break;
                     case WM_MBUTTONDOWN: OnDown(MouseButtonKind.Middle, info->pt, now); break;
-                    case WM_LBUTTONUP: OnUp(MouseButtonKind.Left, now); break;
-                    case WM_RBUTTONUP: OnUp(MouseButtonKind.Right, now); break;
-                    case WM_MBUTTONUP: OnUp(MouseButtonKind.Middle, now); break;
+                    case WM_LBUTTONUP: OnUp(MouseButtonKind.Left, info->pt, now); break;
+                    case WM_RBUTTONUP: OnUp(MouseButtonKind.Right, info->pt, now); break;
+                    case WM_MBUTTONUP: OnUp(MouseButtonKind.Middle, info->pt, now); break;
                 }
             }
         }
@@ -120,11 +127,13 @@ public static unsafe class ClickRecorder
         _presses.Add(press);
     }
 
-    private static void OnUp(MouseButtonKind button, long now)
+    private static void OnUp(MouseButtonKind button, POINT pt, long now)
     {
         Press? press = _open[(int)button];
         if (press == null) return;
         press.Up = now;
+        press.EndX = pt.X;
+        press.EndY = pt.Y;
         _open[(int)button] = null;
         _dispatcher?.InvokeAsync(() => ClickRecorded?.Invoke());
     }

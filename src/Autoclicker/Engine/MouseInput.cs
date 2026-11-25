@@ -38,9 +38,10 @@ internal static unsafe class MouseInput
 
     /// <summary>
     /// Envía pulsar y/o soltar en <paramref name="p"/>. Con down y up a la vez hace el clic
-    /// completo (dos veces si es doble). Todo va en una sola llamada a SendInput.
+    /// completo (dos veces si es doble). Con <paramref name="restore"/>, tras soltar el cursor
+    /// vuelve a ese punto. Todo va en una sola llamada a SendInput.
     /// </summary>
-    public static bool Send(ClickSettings s, POINT p, bool down, bool up)
+    public static bool Send(ClickSettings s, POINT p, bool down, bool up, POINT? restore = null)
     {
         (uint downFlag, uint upFlag) = s.Button switch
         {
@@ -49,7 +50,7 @@ internal static unsafe class MouseInput
             _ => (MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP),
         };
 
-        INPUT* inputs = stackalloc INPUT[5];
+        INPUT* inputs = stackalloc INPUT[6];
         int n = 0;
 
         if (s.UseFixedPosition && down) inputs[n++] = MoveTo(p);
@@ -61,7 +62,16 @@ internal static unsafe class MouseInput
             if (up) inputs[n++] = Button(upFlag);
         }
 
+        if (up && restore is { } back) inputs[n++] = MoveTo(back);
+
         return SendInput((uint)n, inputs, sizeof(INPUT)) == n;
+    }
+
+    /// <summary>Mueve el cursor a <paramref name="p"/> (durante un arrastre).</summary>
+    public static void MoveCursor(POINT p)
+    {
+        INPUT move = MoveTo(p);
+        SendInput(1, &move, sizeof(INPUT));
     }
 
     private static INPUT Button(uint flags) => new()

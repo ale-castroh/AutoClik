@@ -136,7 +136,12 @@ public static class Strings
         ["LockWindow"] = ("Pausar si cambia la ventana activa", "Pause if the active window changes"),
         ["LockWindowTip"] = ("Clica solo en la ventana que estaba activa al empezar; si cambias a otra, se pausa y sigue al volver",
                              "Only clicks in the window that was active when it started; switching away pauses it and switching back resumes"),
+        ["RestoreCursor"] = ("Devolver el ratón a su sitio", "Put the mouse back"),
+        ["RestoreCursorTip"] = ("Con posición fija o puntos, el cursor vuelve a donde estaba tras cada clic. Algunos juegos no lo admiten",
+                                "With a fixed position or points, the cursor returns to where it was after each click. Some games don't support it"),
         ["General"] = ("General", "General"),
+        ["StartWithWindows"] = ("Iniciar con Windows", "Start with Windows"),
+        ["StartWithWindowsTip"] = ("Se abre al iniciar sesión, oculto en la bandeja", "Opens when you sign in, hidden in the tray"),
         ["Emergency"] = ("Parar al llevar el ratón a una esquina", "Stop when the mouse hits a corner"),
         ["EmergencyTip"] = ("Parada de emergencia: mueve el ratón a cualquier esquina de la pantalla",
                             "Emergency stop: move the mouse to any corner of the screen"),
@@ -175,6 +180,14 @@ public static class Strings
         ["RightShort"] = ("Der.", "Right"),
         ["WaitNext"] = ("Espera hasta el siguiente", "Wait until next"),
         ["WaitNextHint"] = ("Vacío = intervalo general", "Empty = main interval"),
+        ["DragInfo"] = ("Arrastre hasta X {0} · Y {1} en {2} ms. Elige otro tipo para quitarlo",
+                        "Drag to X {0} · Y {1} in {2} ms. Pick another type to remove it"),
+        ["DragMarkerTip"] = ("Arrastre grabado · Arrastra para mover · Clic para editar",
+                             "Recorded drag · Drag to move · Click to edit"),
+
+        // ---- Errores ----
+        ["UnexpectedError"] = ("Ha ocurrido un error inesperado. AutoClik sigue abierto; los detalles están en:\n{0}",
+                               "An unexpected error occurred. AutoClik is still open; details are in:\n{0}"),
 
         // ---- Selector de posición y grabadora ----
         ["PickHint"] = ("Clic para elegir · Esc para cancelar", "Click to pick · Esc to cancel"),

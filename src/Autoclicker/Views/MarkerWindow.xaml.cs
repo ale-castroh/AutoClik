@@ -52,6 +52,7 @@ public partial class MarkerWindow : Window
     /// <summary>Muestra el marcador centrado en su punto.</summary>
     public void ShowAtPoint()
     {
+        Root.ToolTip = Localization.Strings.T(Point.IsDrag ? "DragMarkerTip" : "MarkerTip");
         if (!IsVisible) Show();
         GetWindowRect(_hwnd, out RECT r);
         int w = r.Right - r.Left, h = r.Bottom - r.Top;
@@ -107,8 +108,15 @@ public partial class MarkerWindow : Window
         if (_moved)
         {
             GetWindowRect(_hwnd, out RECT r);
-            Point.X = (r.Left + r.Right) / 2;
-            Point.Y = (r.Top + r.Bottom) / 2;
+            int x = (r.Left + r.Right) / 2, y = (r.Top + r.Bottom) / 2;
+            // En un arrastre grabado, el destino se mueve lo mismo que el origen.
+            if (Point.EndX is int ex && Point.EndY is int ey)
+            {
+                Point.EndX = ex + (x - Point.X);
+                Point.EndY = ey + (y - Point.Y);
+            }
+            Point.X = x;
+            Point.Y = y;
             Moved?.Invoke(this);
         }
         else

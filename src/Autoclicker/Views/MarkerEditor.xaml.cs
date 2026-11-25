@@ -46,7 +46,13 @@ public partial class MarkerEditor : Window
             ClickKind.Double => KindDouble,
             ClickKind.Hold => KindHold,
             _ => KindGeneral,
-        }).IsChecked = true;
+        }).IsChecked = point.Kind != ClickKind.Drag; // un arrastre no marca ningún tipo
+
+        if (point.IsDrag)
+        {
+            DragText.Text = Strings.F("DragInfo", point.EndX!, point.EndY!, point.HoldMs ?? 0);
+            DragText.Visibility = Visibility.Visible;
+        }
 
         DelayBox.Text = point.DelayMs?.ToString() ?? "";
         DelayBox.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(Compat.IsDigit);
@@ -66,10 +72,19 @@ public partial class MarkerEditor : Window
                       : ButtonRight.IsChecked == true ? MouseButtonKind.Right
                       : ButtonMiddle.IsChecked == true ? MouseButtonKind.Middle
                       : null;
-        _point.Kind = KindSingle.IsChecked == true ? ClickKind.Single
-                    : KindDouble.IsChecked == true ? ClickKind.Double
-                    : KindHold.IsChecked == true ? ClickKind.Hold
-                    : null;
+        ClickKind? kind = KindSingle.IsChecked == true ? ClickKind.Single
+                        : KindDouble.IsChecked == true ? ClickKind.Double
+                        : KindHold.IsChecked == true ? ClickKind.Hold
+                        : KindGeneral.IsChecked == true ? null
+                        : _point.Kind; // ningún tipo marcado: sigue siendo un arrastre
+        if (kind != ClickKind.Drag && _point.Kind == ClickKind.Drag)
+        {
+            // Se eligió otro tipo: deja de ser arrastre.
+            _point.EndX = null;
+            _point.EndY = null;
+            DragText.Visibility = Visibility.Collapsed;
+        }
+        _point.Kind = kind;
         _point.DelayMs = int.TryParse(DelayBox.Text, out int ms) ? ms : null;
         Edited?.Invoke();
     }

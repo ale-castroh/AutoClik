@@ -16,7 +16,7 @@ internal static class SingleInstance
     /// Nombre del "ámbito": la carpeta de datos (--data) separa las copias de prueba de la normal.
     /// </param>
     /// <returns>true si esta es la primera copia; false si ya había una (y ya se le ha avisado).</returns>
-    public static bool TryAcquire(string? scope)
+    public static bool TryAcquire(string? scope, bool notifyExisting = true)
     {
         string name = @"Local\AutoClik." + (scope == null ? "main" : StableHash(scope));
 
@@ -25,6 +25,13 @@ internal static class SingleInstance
         {
             _showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, name + ".show");
             return true;
+        }
+
+        if (!notifyExisting)
+        {
+            _mutex.Dispose();
+            _mutex = null;
+            return false;
         }
 
         // Ya hay una copia: darle permiso para ponerse en primer plano (esta copia lo tiene,

@@ -371,6 +371,7 @@ public partial class MainWindow : Window
     /// <summary>El motor terminó por sí solo (nº de clics o tiempo alcanzado, o error).</summary>
     private void OnEngineStopped(StopReason reason)
     {
+        if (reason == StopReason.Error && _engine.LastError is { } error) ErrorLog.Write("motor", error);
         if (StartButton.IsChecked != true) return;
         _lastStop = reason;
         StartButton.IsChecked = false;
@@ -405,6 +406,7 @@ public partial class MainWindow : Window
             Y = (int)Number(YBox),
             RandomOffsetPx = (int)Number(OffsetBox),
             LockToForegroundWindow = LockWindowSwitch.IsChecked == true,
+            RestoreCursor = RestoreCursorSwitch.IsChecked == true,
         };
     }
 

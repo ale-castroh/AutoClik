@@ -102,6 +102,23 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 1.3.0 — Mejoras (sin publicar)
+- **Registro de errores**: los errores inesperados van a `%AppData%\AutoClik\error.log` (máx. ~256 KB,
+  luego `error.old.log`). Un error de la interfaz ya no cierra la app: se avisa una vez y sigue abierta.
+  Los errores del motor se registran con su causa (`ClickEngine.LastError`).
+- **Devolver el ratón a su sitio** (Ajustes → Clics, por perfil, desactivado por defecto): con posición
+  fija o puntos, el cursor vuelve a donde estaba en la misma llamada a `SendInput` que el clic.
+- **Iniciar con Windows** (Ajustes → General): entrada en `HKCU\...\Run` con `--tray` (arranca oculto en
+  la bandeja). No va en settings.json; con `--data` se usa `autostart.txt` y nunca se toca el registro.
+  Si el .exe cambia de carpeta, la entrada se corrige al abrirlo.
+- **Arrastres en la grabadora**: si al soltar el ratón está a ≥ 12 px de donde se pulsó, el punto es
+  `Kind = Drag` con destino (`EndX/EndY`) y duración; se reproduce en línea recta (no la trayectoria
+  exacta). Al mover el marcador, el destino se mueve igual. En el editor, elegir otro tipo lo quita.
+- Investigado y descartado: clicar en una ventana tapada. Roblox ignora los clics enviados como mensajes
+  (PostMessage/SendMessage, probado en el PC del usuario); en una máquina virtual Hyperion no lo deja
+  arrancar. Lo único viable sería traer Roblox al frente un instante en cada clic (roba el foco ~150 ms).
+- Pruebas: nueva `tests/ui/extras.ps1`; batería completa pasa.
+
 ## Versión 1.2.1 — Correcciones ✅
 - Multi-punto con "Solo en una ventana": la secuencia ya no avanza mientras está en pausa; al volver
   sigue por el mismo punto (antes se saltaba puntos).

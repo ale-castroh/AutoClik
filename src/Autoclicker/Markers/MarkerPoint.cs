@@ -12,5 +12,11 @@ public sealed class MarkerPoint
     public int? DelayMs { get; set; }
     public int? HoldMs { get; set; }
 
-    public ClickPoint ToClickPoint() => new(X, Y, Button, Kind, DelayMs, HoldMs);
+    /// <summary>Destino de un arrastre grabado (Kind = Drag).</summary>
+    public int? EndX { get; set; }
+    public int? EndY { get; set; }
+
+    public bool IsDrag => Kind == ClickKind.Drag && EndX.HasValue && EndY.HasValue;
+
+    public ClickPoint ToClickPoint() => new(X, Y, Button, Kind, DelayMs, HoldMs, EndX, EndY);
 }

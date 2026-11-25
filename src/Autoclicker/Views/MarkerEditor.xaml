@@ -54,6 +54,9 @@
                     <RadioButton x:Name="KindHold" Content="{l:T Hold}" GroupName="PtKind" Style="{StaticResource CompactSegmentStyle}" />
                 </UniformGrid>
             </Border>
+            <!-- Solo en arrastres grabados -->
+            <TextBlock x:Name="DragText" Visibility="Collapsed" Margin="0,6,0,0" MaxWidth="260"
+                       TextWrapping="Wrap" HorizontalAlignment="Left" Style="{StaticResource CaptionStyle}" />
 
             <DockPanel Margin="0,14,0,0">
                 <TextBlock DockPanel.Dock="Right" Text="ms" Style="{StaticResource UnitStyle}" />

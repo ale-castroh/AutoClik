@@ -27,13 +27,13 @@ a donde quieras y volver para pulsar **Detener**.
 | **Posición → Fijo** | Clica siempre en un punto; **Elegir** lo marca en pantalla |
 | **Posición → Puntos** | Varios marcadores numerados que se recorren en orden |
 | **Puntos → Añadir** | Cada clic en la pantalla añade un marcador; Esc termina |
-| **Puntos → Grabar** | Graba tus clics reales (posición, botón y tiempos) y los convierte en puntos |
+| **Puntos → Grabar** | Graba tus clics reales (posición, botón y tiempos) y los convierte en puntos; si arrastras, se graba como arrastre (en línea recta) |
 | **Puntos → Velocidad** | Reproduce la secuencia a ×0,5 · ×1 · ×2 · ×4 |
 | **Marcador** | Arrástralo para moverlo; clic para editar botón, tipo, espera, orden o borrarlo |
 | **Perfil** (barra de título) | Cambiar, crear (copia del actual), renombrar o eliminar configuraciones |
 | **⚙ Ajustes → Atajo** | Clic en la tecla y pulsa otra (teclas, combinaciones o botones laterales del ratón). Modo *Alternar* o *Mantener* |
-| **⚙ Ajustes → Clics** | Variación aleatoria del intervalo, desvío del punto fijo, retardo de inicio, pausar si cambia la ventana activa |
-| **⚙ Ajustes → General** | Parar al llevar el ratón a una esquina, minimizar/cerrar a la bandeja |
+| **⚙ Ajustes → Clics** | Variación aleatoria del intervalo, desvío del punto fijo, retardo de inicio, pausar si cambia la ventana activa, devolver el ratón a su sitio tras cada clic (posición fija o puntos) |
+| **⚙ Ajustes → General** | Parar al llevar el ratón a una esquina, minimizar/cerrar a la bandeja, iniciar con Windows (oculto en la bandeja) |
 | **📌** (barra de título) | Mantener la ventana siempre visible |
 
 ### Seguridad
@@ -46,7 +46,8 @@ a donde quieras y volver para pulsar **Detener**.
 
 Todo se guarda solo en `%AppData%\AutoClik\settings.json` (perfiles, puntos, atajo, posición
 de la ventana). Para empezar de cero, borra ese archivo con la app cerrada. Los ajustes de versiones
-anteriores (`%AppData%\Autoclicker`) se importan solos la primera vez.
+anteriores (`%AppData%\Autoclicker`) se importan solos la primera vez. Si ocurre un error inesperado,
+los detalles quedan en `error.log`, en esa misma carpeta.
 
 ### Si Windows lo bloquea
 

@@ -2,14 +2,15 @@ namespace Autoclicker.Engine;
 
 public enum MouseButtonKind { Left, Right, Middle }
 
-public enum ClickKind { Single, Double, Hold }
+/// <summary>Drag = pulsar, moverse hasta otro punto y soltar (solo en puntos grabados).</summary>
+public enum ClickKind { Single, Double, Hold, Drag }
 
 /// <summary>
 /// Un punto de la secuencia multi-punto (coordenadas físicas). Los valores null
-/// heredan la configuración general (botón, tipo, intervalo).
+/// heredan la configuración general (botón, tipo, intervalo). EndX/EndY: destino de un arrastre.
 /// </summary>
 public sealed record ClickPoint(int X, int Y, MouseButtonKind? Button = null, ClickKind? Kind = null,
-                                int? DelayMs = null, int? HoldMs = null);
+                                int? DelayMs = null, int? HoldMs = null, int? EndX = null, int? EndY = null);
 
 /// <summary>Configuración inmutable de una sesión de clics.</summary>
 public sealed record ClickSettings
@@ -24,7 +25,7 @@ public sealed record ClickSettings
 
     public ClickKind Kind { get; init; } = ClickKind.Single;
 
-    /// <summary>Tiempo que se mantiene pulsado el botón cuando Kind = Hold.</summary>
+    /// <summary>Tiempo que se mantiene pulsado el botón (Kind = Hold) o que dura el arrastre (Kind = Drag).</summary>
     public TimeSpan HoldDuration { get; init; } = TimeSpan.FromMilliseconds(100);
 
     /// <summary>
@@ -51,6 +52,13 @@ public sealed record ClickSettings
     /// <summary>Coordenadas físicas de pantalla (píxeles reales).</summary>
     public int X { get; init; }
     public int Y { get; init; }
+
+    /// <summary>Destino de un arrastre (Kind = Drag). Sin destino, Drag se comporta como Hold.</summary>
+    public int? DragToX { get; init; }
+    public int? DragToY { get; init; }
+
+    /// <summary>Con posición fija: tras cada clic, devolver el cursor a donde estaba.</summary>
+    public bool RestoreCursor { get; init; }
 
     /// <summary>Desvío aleatorio ± píxeles alrededor de (X, Y). Solo con posición fija.</summary>
     public int RandomOffsetPx { get; init; }

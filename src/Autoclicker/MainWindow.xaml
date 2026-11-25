@@ -335,6 +335,13 @@
                             <TextBlock Text="{l:T LockWindow}" Style="{StaticResource RowTitleStyle}"
                                        ToolTip="{l:T LockWindowTip}" />
                         </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <CheckBox x:Name="RestoreCursorSwitch" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                      Style="{StaticResource ToggleSwitchStyle}" />
+                            <TextBlock Text="{l:T RestoreCursor}" Style="{StaticResource RowTitleStyle}"
+                                       ToolTip="{l:T RestoreCursorTip}" />
+                        </DockPanel>
                     </StackPanel>
                 </Border>
 
@@ -360,6 +367,14 @@
                                       Style="{StaticResource ToggleSwitchStyle}" />
                             <TextBlock Text="{l:T CloseToTray}" Style="{StaticResource RowTitleStyle}"
                                        ToolTip="{l:T CloseToTrayTip}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <CheckBox x:Name="StartWithWindowsSwitch" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                      Style="{StaticResource ToggleSwitchStyle}"
+                                      Checked="StartWithWindows_Changed" Unchecked="StartWithWindows_Changed" />
+                            <TextBlock Text="{l:T StartWithWindows}" Style="{StaticResource RowTitleStyle}"
+                                       ToolTip="{l:T StartWithWindowsTip}" />
                         </DockPanel>
                     </StackPanel>
                 </Border>

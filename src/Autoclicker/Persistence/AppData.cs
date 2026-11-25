@@ -119,6 +119,7 @@ public sealed class ProfileData
     public int JitterPercent { get; set; }
     public int StartDelaySeconds { get; set; }
     public bool LockToWindow { get; set; }
+    public bool RestoreCursor { get; set; }
 
     internal Dictionary<string, object?> ToJson() => new()
     {
@@ -139,6 +140,7 @@ public sealed class ProfileData
         ["JitterPercent"] = JitterPercent,
         ["StartDelaySeconds"] = StartDelaySeconds,
         ["LockToWindow"] = LockToWindow,
+        ["RestoreCursor"] = RestoreCursor,
     };
 
     internal static ProfileData FromJson(JsonObj j)
@@ -163,6 +165,7 @@ public sealed class ProfileData
             JitterPercent = j.Int("JitterPercent", 0),
             StartDelaySeconds = j.Int("StartDelaySeconds", 0),
             LockToWindow = j.Bool("LockToWindow", false),
+            RestoreCursor = j.Bool("RestoreCursor", false),
         };
     }
 }
@@ -175,6 +178,8 @@ public sealed class PointData
     public ClickKind? Kind { get; set; }
     public int? DelayMs { get; set; }
     public int? HoldMs { get; set; }
+    public int? EndX { get; set; }
+    public int? EndY { get; set; }
 
     internal Dictionary<string, object?> ToJson() => new()
     {
@@ -184,6 +189,8 @@ public sealed class PointData
         ["Kind"] = Kind,
         ["DelayMs"] = DelayMs,
         ["HoldMs"] = HoldMs,
+        ["EndX"] = EndX,
+        ["EndY"] = EndY,
     };
 
     internal static PointData FromJson(JsonObj j) => new()
@@ -194,5 +201,7 @@ public sealed class PointData
         Kind = j.EnumOrNull<ClickKind>("Kind"),
         DelayMs = j.IntOrNull("DelayMs"),
         HoldMs = j.IntOrNull("HoldMs"),
+        EndX = j.IntOrNull("EndX"),
+        EndY = j.IntOrNull("EndY"),
     };
 }
