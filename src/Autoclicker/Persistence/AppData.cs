@@ -58,10 +58,13 @@ public sealed class GlobalPrefs
     public bool CloseToTray { get; set; }
     public bool EmergencyCorner { get; set; } = true;
     public bool Pinned { get; set; }
+    public bool Translucent { get; set; } = true;
     public double? WindowLeft { get; set; }
     public double? WindowTop { get; set; }
 
     // Anti-AFK (experimental): ventana por nombre de proceso y punto en coordenadas de cliente.
+    /// <summary>Mostrar funciones experimentales (Anti-AFK...). Apagado por defecto.</summary>
+    public bool Experimental { get; set; }
     public bool AntiAfkEnabled { get; set; }
     public int AntiAfkMinutes { get; set; } = 15;
     public string? AntiAfkProcess { get; set; }
@@ -78,8 +81,10 @@ public sealed class GlobalPrefs
         ["CloseToTray"] = CloseToTray,
         ["EmergencyCorner"] = EmergencyCorner,
         ["Pinned"] = Pinned,
+        ["Translucent"] = Translucent,
         ["WindowLeft"] = WindowLeft,
         ["WindowTop"] = WindowTop,
+        ["Experimental"] = Experimental,
         ["AntiAfkEnabled"] = AntiAfkEnabled,
         ["AntiAfkMinutes"] = AntiAfkMinutes,
         ["AntiAfkProcess"] = AntiAfkProcess,
@@ -100,8 +105,11 @@ public sealed class GlobalPrefs
             CloseToTray = j.Bool("CloseToTray", d.CloseToTray),
             EmergencyCorner = j.Bool("EmergencyCorner", d.EmergencyCorner),
             Pinned = j.Bool("Pinned", d.Pinned),
+            Translucent = j.Bool("Translucent", d.Translucent),
             WindowLeft = j.NumOrNull("WindowLeft"),
             WindowTop = j.NumOrNull("WindowTop"),
+            // Sin el campo (ajustes de la 1.4): encendido si ya se usaba el anti-AFK.
+            Experimental = j.Bool("Experimental", j.Bool("AntiAfkEnabled", false) || j.Str("AntiAfkProcess") != null),
             AntiAfkEnabled = j.Bool("AntiAfkEnabled", false),
             AntiAfkMinutes = j.Int("AntiAfkMinutes", d.AntiAfkMinutes),
             AntiAfkProcess = j.Str("AntiAfkProcess"),

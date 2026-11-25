@@ -16,6 +16,7 @@ internal static partial class NativeMethods
 
     public const int DWMWCP_ROUND = 2;
     public const int DWMSBT_MAINWINDOW = 2; // Mica
+    public const int DWMSBT_TRANSIENTWINDOW = 3; // Acrílico (translúcido y borroso)
 
     // Estilos de ventana
     public const int GWL_STYLE = -16;

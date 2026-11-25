@@ -77,9 +77,17 @@ public partial class MainWindow : Window
 
         EmergencyCornerWatcher.Triggered += OnEmergencyCorner;
 
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        AboutVersionText.Text = Strings.F("AboutVersion", $"{version.Major}.{version.Minor}.{version.Build}");
+
         // El anti-AFK espera mientras se clica, se graba o se elige un punto.
         _antiAfk.ShouldWait = () => StartButton.IsChecked == true || _recording || _picking;
-        _antiAfk.StatusChanged += () => AntiAfkStatusText.Text = _antiAfk.Status;
+        _antiAfk.StatusChanged += () =>
+        {
+            AntiAfkStatusText.Text = _antiAfk.Status;
+            AfkCountdownText.Text = _antiAfk.Countdown;
+            AfkDetailText.Text = _antiAfk.Detail;
+        };
 
         InitPersistence();
     }
@@ -89,32 +97,75 @@ public partial class MainWindow : Window
         IntervalBox, HoldBox, RepeatCountBox, DurationBox, XBox, YBox, OffsetBox, JitterBox, DelayBox, AfkMinutesBox,
     ];
 
-    // ================= Páginas (principal / ajustes) =================
+    // ================= Secciones (barra lateral) =================
 
-    private void SettingsButton_Changed(object sender, RoutedEventArgs e) => ShowSettings(SettingsButton.IsChecked == true);
+    private bool _navigating;
 
-    private void ShowSettings(bool show)
+    /// <summary>Secciones en el orden de la barra lateral, con su botón.</summary>
+    private (FrameworkElement Page, ToggleButton Button)[] Sections =>
+    [
+        (MainPage, NavClicksButton),
+        (AntiAfkPage, NavAntiAfkButton),
+        (SettingsPage, SettingsButton),
+    ];
+
+    private FrameworkElement CurrentPage => Sections.First(s => s.Page.Visibility == Visibility.Visible).Page;
+
+    // Mientras se carga la ventana, "Clics" ya llega marcado antes de que existan las secciones.
+    private bool SectionsReady => MainPage != null && AntiAfkPage != null && SettingsPage != null;
+
+    private void Nav_Checked(object sender, RoutedEventArgs e)
     {
-        if (SettingsButton.IsChecked != show) SettingsButton.IsChecked = show; // vuelve a entrar por el evento
+        if (_navigating || !SectionsReady) return;
+        ShowPage(Sections.First(s => s.Button == sender).Page);
+    }
+
+    /// <summary>
+    /// Pulsar la sección en la que ya estás: Ajustes vuelve a Clics (como antes el engranaje);
+    /// las demás se quedan donde están.
+    /// </summary>
+    private void Nav_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (_navigating || !SectionsReady) return;
+        var page = Sections.First(s => s.Button == sender).Page;
+        if (page != CurrentPage) return;
+        if (page == SettingsPage) ShowPage(MainPage);
+        else Dispatcher.InvokeAsync(() => ((ToggleButton)sender).IsChecked = true);
+    }
+
+    private void ShowPage(FrameworkElement incoming)
+    {
         if (_capturingHotkey) EndHotkeyCapture(null);
 
-        FrameworkElement incoming = show ? SettingsPage : MainPage;
-        FrameworkElement outgoing = show ? MainPage : SettingsPage;
-        if (incoming.Visibility == Visibility.Visible) return;
+        // Marcar solo el botón de esa sección.
+        _navigating = true;
+        foreach (var (page, button) in Sections) button.IsChecked = page == incoming;
+        _navigating = false;
 
-        // Ajustes ocupa como mucho lo mismo que la página principal; si no cabe, se desplaza.
-        if (show) SettingsScroll.MaxHeight = Math.Max(MainPage.ActualHeight, 400);
+        FrameworkElement outgoing = CurrentPage;
+        if (incoming == outgoing) return;
 
+        // Todas las secciones miden al menos lo que Clics (la ventana no salta de tamaño);
+        // Ajustes, si no cabe, se desplaza.
+        if (outgoing == MainPage)
+        {
+            double height = MainPage.ActualHeight;
+            AntiAfkPage.MinHeight = height;
+            SettingsScroll.MaxHeight = Math.Max(height, 400);
+        }
+
+        int from = Array.FindIndex(Sections, s => s.Page == outgoing);
+        int to = Array.FindIndex(Sections, s => s.Page == incoming);
         outgoing.Visibility = Visibility.Collapsed;
         incoming.Visibility = Visibility.Visible;
 
-        // Entrada suave: fundido + desplazamiento corto desde el lado del que viene.
+        // Entrada suave: fundido + desplazamiento corto desde el lado de la barra del que viene.
         var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut };
         var duration = TimeSpan.FromMilliseconds(180);
         incoming.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, duration) { EasingFunction = ease });
         ((System.Windows.Media.TranslateTransform)incoming.RenderTransform).BeginAnimation(
-            System.Windows.Media.TranslateTransform.XProperty,
-            new System.Windows.Media.Animation.DoubleAnimation(show ? 18 : -18, 0, duration) { EasingFunction = ease });
+            System.Windows.Media.TranslateTransform.YProperty,
+            new System.Windows.Media.Animation.DoubleAnimation(to > from ? 14 : -14, 0, duration) { EasingFunction = ease });
     }
 
     private void SetOptionsEnabled(bool enabled)
@@ -231,14 +282,27 @@ public partial class MainWindow : Window
     private void OnThemeChanged()
     {
         WindowBackdrop.ApplyTheme(this);
+        ApplyCardBrush();
         UpdateIcons();
+    }
+
+    /// <summary>
+    /// Con fondo translúcido, las tarjetas usan un fondo más opaco (del tema actual) para que
+    /// el menú no se pierda sobre lo que hay detrás; sin él, el normal.
+    /// </summary>
+    private void ApplyCardBrush()
+    {
+        Resources.Remove("CardBackgroundBrush");
+        if (WindowBackdrop.Translucent && WindowBackdrop.MicaSupported
+            && Application.Current.TryFindResource("CardTranslucentBrush") is System.Windows.Media.Brush brush)
+            Resources["CardBackgroundBrush"] = brush;
     }
 
     private void UpdateIcons()
     {
         bool running = StartButton.IsChecked == true;
-        Icon = IconFactory.Render(64, ThemeManager.Accent, active: false);
-        _tray?.Update(ThemeManager.Accent, running, Strings.T(running ? "TrayRunning" : "TrayStopped"));
+        Icon = IconFactory.Render(64, active: false);
+        _tray?.Update(running, Strings.T(running ? "TrayRunning" : "TrayStopped"));
     }
 
     // ================= Barra de título y bandeja =================
@@ -440,7 +504,7 @@ public partial class MainWindow : Window
         }
 
         CountText.Text = count.ToString("N0");
-        RateText.Text = Strings.F("Rate", Strings.Clicks(count), rate);
+        RateText.Text = running ? Strings.F("RateRunning", Strings.Clicks(count), rate) : Strings.Clicks(count);
 
         double waitLeft = (_runDelay - Compat.Elapsed(_runStarted, now)).TotalSeconds;
         StatusText.Text = running
@@ -455,10 +519,14 @@ public partial class MainWindow : Window
                 _ => "Stopped",
             });
 
+        // La tecla va dentro del botón; debajo solo se explica el modo "Mantener".
         string key = _hotkeys?.Current.ToString() ?? "F6";
-        HotkeyHintText.Text = HoldModeRadio.IsChecked == true
-            ? Strings.F("HoldHint", key)
-            : Strings.F(running ? "KeyToStop" : "KeyToStart", key);
+        Theme.Ui.SetKeyText(StartButton, key);
+        bool hold = HoldModeRadio.IsChecked == true;
+        HotkeyHintText.Text = hold ? Strings.F("HoldHint", key) : "";
+        HotkeyHintText.Visibility = hold ? Visibility.Visible : Visibility.Collapsed;
+        System.Windows.Automation.AutomationProperties.SetHelpText(StartButton,
+            hold ? Strings.F("HoldHint", key) : Strings.F(running ? "KeyToStop" : "KeyToStart", key));
     }
 
     // ================= Atajo =================
@@ -535,10 +603,10 @@ public partial class MainWindow : Window
     {
         if (!_capturingHotkey)
         {
-            if (e.Key == Key.Escape && SettingsPage.IsVisible)
+            if (e.Key == Key.Escape && !MainPage.IsVisible)
             {
                 e.Handled = true;
-                ShowSettings(false);
+                ShowPage(MainPage);
                 return;
             }
             base.OnPreviewKeyDown(e);
@@ -603,6 +671,42 @@ public partial class MainWindow : Window
     private void AntiAfk_Changed(object sender, RoutedEventArgs e) => _antiAfk.Enabled = AntiAfkSwitch.IsChecked == true;
 
     private void AfkMinutes_Changed(object sender, TextChangedEventArgs e) => _antiAfk.SetMinutes((int)Number(AfkMinutesBox));
+
+    private void AfkTest_Click(object sender, RoutedEventArgs e) => _antiAfk.PulseNow();
+
+    /// <summary>
+    /// Funciones experimentales: la barra muestra u oculta el Anti-AFK (por enlace en el XAML).
+    /// Al apagarlas se detiene el anti-AFK y, si estabas en su sección, se vuelve a Clics.
+    /// </summary>
+    private void Experimental_Changed(object sender, RoutedEventArgs e)
+    {
+        if (ExperimentalSwitch.IsChecked == true) return;
+        AntiAfkSwitch.IsChecked = false;
+        if (SectionsReady && CurrentPage == AntiAfkPage) ShowPage(MainPage);
+    }
+
+    // ================= Ajustes: fondo y "Acerca de" =================
+
+    private void Translucent_Changed(object sender, RoutedEventArgs e)
+    {
+        WindowBackdrop.SetTranslucent(this, TranslucentSwitch.IsChecked == true);
+        ApplyCardBrush();
+    }
+
+    /// <summary>Abre la carpeta de ajustes (settings.json y error.log) en el Explorador.</summary>
+    private void OpenDataFolder_Click(object sender, RoutedEventArgs e)
+    {
+        string folder = Path.GetDirectoryName(ErrorLog.FilePath)!;
+        try
+        {
+            Directory.CreateDirectory(folder);
+            Process.Start("explorer.exe", "\"" + folder + "\"");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            ErrorLog.Write("abrir carpeta", ex);
+        }
+    }
 
     /// <summary>Elegir la ventana y el punto de clic del anti-AFK con la cruz.</summary>
     private void AfkPick_Click(object sender, RoutedEventArgs e)

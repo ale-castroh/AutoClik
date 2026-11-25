@@ -22,12 +22,12 @@ internal sealed unsafe class TrayIcon : IDisposable
 
     public TrayIcon(nint hwnd) => _hwnd = hwnd;
 
-    /// <summary>Cambia el icono (acento o "activo") y el texto al pasar el ratón.</summary>
-    public void Update(Color accent, bool active, string tooltip)
+    /// <summary>Cambia el icono (chispa verde mientras clica) y el texto al pasar el ratón.</summary>
+    public void Update(bool active, string tooltip)
     {
         int size = Math.Max(GetSystemMetrics(SM_CXSMICON), 16);
         nint old = _icon;
-        _icon = IconFactory.ToHIcon(IconFactory.Render(size, accent, active));
+        _icon = IconFactory.ToHIcon(IconFactory.Render(size, active));
         _tooltip = tooltip;
         Notify(_added ? NIM_MODIFY : NIM_ADD);
         _added = true;

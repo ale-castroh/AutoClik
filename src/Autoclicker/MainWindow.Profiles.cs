@@ -47,7 +47,8 @@ public partial class MainWindow
     private void OnAnyInputChanged(object sender, RoutedEventArgs e)
     {
         // Iniciar/Detener, abrir ajustes o capturar el atajo no son cambios de configuración.
-        if (e.OriginalSource == StartButton || e.OriginalSource == SettingsButton || e.OriginalSource == HotkeyButton) return;
+        if (e.OriginalSource == StartButton || e.OriginalSource == HotkeyButton
+            || e.OriginalSource == SettingsButton || e.OriginalSource == NavClicksButton || e.OriginalSource == NavAntiAfkButton) return;
         ScheduleSave();
     }
 
@@ -74,6 +75,7 @@ public partial class MainWindow
         CloseToTraySwitch.IsChecked = p.CloseToTray;
         EmergencySwitch.IsChecked = p.EmergencyCorner;
         PinButton.IsChecked = p.Pinned;
+        TranslucentSwitch.IsChecked = p.Translucent;
         (p.HotkeyHoldMode ? HoldModeRadio : ToggleModeRadio).IsChecked = true;
 
         // Anti-AFK: primero la ventana y los minutos, luego el interruptor (que lo arranca).
@@ -81,7 +83,8 @@ public partial class MainWindow
         AfkMinutesBox.Text = Compat.Clamp(p.AntiAfkMinutes, 1, 18).ToString();
         _antiAfk.SetMinutes(p.AntiAfkMinutes);
         RefreshAfkTarget();
-        AntiAfkSwitch.IsChecked = p.AntiAfkEnabled;
+        ExperimentalSwitch.IsChecked = p.Experimental;
+        AntiAfkSwitch.IsChecked = p.Experimental && p.AntiAfkEnabled;
 
         // "Iniciar con Windows" no va en settings.json: lo que manda es el registro.
         _syncingAutostart = true;
@@ -110,8 +113,10 @@ public partial class MainWindow
         CloseToTray = CloseToTraySwitch.IsChecked == true,
         EmergencyCorner = EmergencySwitch.IsChecked == true,
         Pinned = PinButton.IsChecked == true,
+        Translucent = TranslucentSwitch.IsChecked == true,
         WindowLeft = double.IsNaN(Left) ? _data.Prefs.WindowLeft : Left,
         WindowTop = double.IsNaN(Top) ? _data.Prefs.WindowTop : Top,
+        Experimental = ExperimentalSwitch.IsChecked == true,
         AntiAfkEnabled = AntiAfkSwitch.IsChecked == true,
         AntiAfkMinutes = (int)Compat.Clamp(Number(AfkMinutesBox), 1, 18),
         AntiAfkProcess = _antiAfk.ProcessName,

@@ -20,7 +20,11 @@ public static class ThemeManager
     private static bool _initialized;
 
     public static AppTheme Current { get; private set; }
+    /// <summary>Acento para rellenos (botón principal, interruptores, iconos de la app).</summary>
     public static Color Accent { get; private set; }
+
+    /// <summary>Acento para textos e iconos sobre el fondo (más claro en oscuro, más oscuro en claro).</summary>
+    public static Color AccentText { get; private set; }
 
     /// <summary>Fuerza un tema (argumento --theme=light|dark). Null = seguir a Windows.</summary>
     public static AppTheme? Override { get; set; }
@@ -30,9 +34,9 @@ public static class ThemeManager
     public static void Apply()
     {
         AppTheme theme = Override ?? ReadSystemTheme();
-        Color accent = ReadAccent(theme);
+        (Color accent, Color accentText) = ReadAccent(theme);
 
-        if (_initialized && theme == Current && accent == Accent) return;
+        if (_initialized && theme == Current && accent == Accent && accentText == AccentText) return;
 
         var resources = Application.Current.Resources;
         if (!_initialized || theme != Current)
@@ -46,14 +50,16 @@ public static class ThemeManager
 
         Current = theme;
         Accent = accent;
+        AccentText = accentText;
         _initialized = true;
-        ApplyAccent(resources, accent);
+        ApplyAccent(resources, accent, accentText);
 
         ThemeChanged?.Invoke();
     }
 
-    private static void ApplyAccent(ResourceDictionary resources, Color accent)
+    private static void ApplyAccent(ResourceDictionary resources, Color accent, Color accentText)
     {
+        resources["AccentTextBrush"] = Frozen(accentText);
         Color onAccent = Luminance(accent) > 0.5 ? Color.FromRgb(0x10, 0x10, 0x10) : Colors.White;
 
         resources["AccentColor"] = accent;
@@ -72,9 +78,10 @@ public static class ThemeManager
 
     /// <summary>
     /// AccentPalette contiene 8 tonos RGBA: 0-2 claros, 3 base, 4-6 oscuros.
-    /// Igual que Fluent: en oscuro se usa "Light 2" y en claro "Dark 1".
+    /// Rellenos: el tono base en oscuro (con texto blanco, no el tono pálido de Fluent) y
+    /// "Dark 1" en claro. Textos e iconos: "Light 1" en oscuro y "Dark 2" en claro.
     /// </summary>
-    private static Color ReadAccent(AppTheme theme)
+    private static (Color Fill, Color Text) ReadAccent(AppTheme theme)
     {
         try
         {
@@ -82,22 +89,25 @@ public static class ThemeManager
             {
                 if (key?.GetValue("AccentPalette") is byte[] p && p.Length >= 32)
                 {
-                    int i = (theme == AppTheme.Dark ? 1 : 4) * 4;
-                    return Color.FromRgb(p[i], p[i + 1], p[i + 2]);
+                    Color Tone(int i) => Color.FromRgb(p[i * 4], p[i * 4 + 1], p[i * 4 + 2]);
+                    return theme == AppTheme.Dark ? (Tone(3), Tone(2)) : (Tone(4), Tone(5));
                 }
             }
 
             using (var key = Registry.CurrentUser.OpenSubKey(DwmKey))
             {
                 if (key?.GetValue("AccentColor") is int abgr)
-                    return Color.FromRgb((byte)abgr, (byte)(abgr >> 8), (byte)(abgr >> 16));
+                {
+                    var c = Color.FromRgb((byte)abgr, (byte)(abgr >> 8), (byte)(abgr >> 16));
+                    return (c, c);
+                }
             }
         }
         catch
         {
             // Registro inaccesible: acento por defecto.
         }
-        return DefaultAccent;
+        return (DefaultAccent, DefaultAccent);
     }
 
     private static double Luminance(Color c) => (0.2126 * c.R + 0.7152 * c.G + 0.0722 * c.B) / 255.0;

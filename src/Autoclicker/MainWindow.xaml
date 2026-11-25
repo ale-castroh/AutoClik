@@ -2,8 +2,9 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:l="clr-namespace:Autoclicker.Localization"
+        xmlns:t="clr-namespace:Autoclicker.Theme"
         Title="AutoClik"
-        Width="380" SizeToContent="Height"
+        Width="440" SizeToContent="Height"
         ResizeMode="CanMinimize"
         WindowStartupLocation="CenterScreen"
         Topmost="{Binding IsChecked, ElementName=PinButton}"
@@ -36,11 +37,17 @@
         <!-- ================= Barra de título ================= -->
         <Grid Grid.Row="0">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
-                <Border Width="18" Height="18" CornerRadius="5" Background="{DynamicResource AccentBrush}">
-                    <TextBlock Text="&#xE8B0;" FontFamily="{StaticResource IconFont}" FontSize="11"
-                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                               Foreground="{DynamicResource OnAccentBrush}" />
-                </Border>
+                <!-- Logo (sin fondo): el lienzo de 24 se escala entero, así nada se descentra -->
+                <Viewbox Width="26" Height="26" Margin="-3,0,0,0">
+                    <Canvas Width="24" Height="24">
+                        <Path Data="{StaticResource LogoBodyGeometry}" Fill="White" Stroke="{StaticResource LogoInkBrush}"
+                              StrokeThickness="1.4" />
+                        <Path Data="{StaticResource LogoLinesGeometry}" Stroke="{StaticResource LogoInkBrush}" StrokeThickness="1.4"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                        <Path Data="{StaticResource LogoSparkGeometry}" Stroke="{StaticResource LogoSparkBrush}" StrokeThickness="1.2"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round" />
+                    </Canvas>
+                </Viewbox>
                 <!-- Perfil actual: clic para cambiar, crear, renombrar o eliminar -->
                 <Button x:Name="ProfileButton" Margin="6,0,0,0" Width="NaN" Padding="6,0" MaxWidth="150"
                         Style="{StaticResource TitleBarButtonStyle}" FontFamily="{StaticResource UiFont}" FontSize="12"
@@ -55,9 +62,6 @@
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0">
-                <ToggleButton x:Name="SettingsButton" Content="&#xE713;" FontSize="13" ToolTip="{l:T Settings}"
-                              Style="{StaticResource TitleBarToggleStyle}"
-                              Checked="SettingsButton_Changed" Unchecked="SettingsButton_Changed" />
                 <ToggleButton x:Name="PinButton" Style="{StaticResource TitleBarPinStyle}" />
                 <Button Content="&#xE921;" ToolTip="{l:T Minimize}" Style="{StaticResource TitleBarButtonStyle}"
                         Click="Minimize_Click" />
@@ -66,50 +70,76 @@
             </StackPanel>
         </Grid>
 
-        <!-- Dos páginas en la misma celda; solo una visible. La ventana se ajusta a su alto. -->
+        <!-- ================= Barra lateral + secciones ================= -->
         <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Un botón por sección; Ajustes siempre abajo. El puntito verde = funcionando. -->
+            <DockPanel Grid.Column="0" Margin="14,2,0,14">
+                <ToggleButton x:Name="SettingsButton" DockPanel.Dock="Bottom" Content="&#xE713;" ToolTip="{l:T Settings}"
+                              Style="{StaticResource NavButtonStyle}" Checked="Nav_Checked" Unchecked="Nav_Unchecked" />
+                <StackPanel>
+                    <ToggleButton x:Name="NavClicksButton" Content="&#xE8B0;" ToolTip="{l:T NavClicks}" IsChecked="True"
+                                  Tag="{Binding IsChecked, ElementName=StartButton}"
+                                  Style="{StaticResource NavButtonStyle}" Checked="Nav_Checked" Unchecked="Nav_Unchecked" />
+                    <ToggleButton x:Name="NavAntiAfkButton" Content="&#xE823;" ToolTip="{l:T AntiAfk}"
+                                  Tag="{Binding IsChecked, ElementName=AntiAfkSwitch}"
+                                  Visibility="{Binding IsChecked, ElementName=ExperimentalSwitch, Converter={StaticResource BoolToVis}}"
+                                  Style="{StaticResource NavButtonStyle}" Checked="Nav_Checked" Unchecked="Nav_Unchecked" />
+                </StackPanel>
+            </DockPanel>
+
+            <!-- Las secciones comparten celda; solo una visible. La ventana se ajusta a su alto. -->
+            <Grid Grid.Column="1">
 
             <!-- ================= Página principal ================= -->
-            <StackPanel x:Name="MainPage" Margin="16,0,16,16">
+            <StackPanel x:Name="MainPage" Margin="12,0,16,16">
                 <StackPanel.RenderTransform>
                     <TranslateTransform />
                 </StackPanel.RenderTransform>
 
-                <!-- Botón + contador -->
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,22">
-                    <ToggleButton x:Name="StartButton" Width="108" Height="108"
-                                  Style="{StaticResource StartButtonStyle}"
-                                  Checked="StartButton_Checked" Unchecked="StartButton_Unchecked" />
-
-                    <StackPanel Margin="34,0,0,0" VerticalAlignment="Center" MinWidth="130">
-                        <TextBlock x:Name="CountText" Text="0" FontFamily="{StaticResource DisplayFont}"
-                                   FontSize="38" FontWeight="SemiBold" />
-                        <TextBlock x:Name="RateText" Text="" Margin="1,-2,0,0"
-                                   Style="{StaticResource CaptionStyle}" />
-
-                        <Border HorizontalAlignment="Left" Margin="0,12,0,0" Padding="10,4" CornerRadius="11"
-                                Background="{DynamicResource SubtleHoverBrush}">
-                            <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="7" Height="7" VerticalAlignment="Center">
-                                    <Ellipse.Style>
-                                        <Style TargetType="Ellipse">
-                                            <Setter Property="Fill" Value="{DynamicResource TextTertiaryBrush}" />
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsChecked, ElementName=StartButton}" Value="True">
-                                                    <Setter Property="Fill" Value="{DynamicResource SuccessBrush}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Ellipse.Style>
-                                </Ellipse>
-                                <TextBlock x:Name="StatusText" Text="{l:T Stopped}" Margin="7,0,0,0" FontSize="12"
-                                           VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            </StackPanel>
-                        </Border>
-
-                        <TextBlock x:Name="HotkeyHintText" Text="" Margin="2,7,0,0"
-                                   Style="{StaticResource CaptionStyle}" Foreground="{DynamicResource TextTertiaryBrush}" />
+                <!-- Lectura: estado, contador y botón principal -->
+                <StackPanel Margin="2,6,0,16">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="7" Height="7" VerticalAlignment="Center">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{DynamicResource IdleDotBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=StartButton}" Value="True">
+                                            <Setter Property="Fill" Value="{DynamicResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock x:Name="StatusText" Text="{l:T Stopped}" Margin="7,0,0,0" FontSize="12" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=StartButton}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </StackPanel>
+
+                    <TextBlock x:Name="CountText" Text="0" Margin="-2,6,0,0" FontFamily="{StaticResource NumberFont}"
+                               FontSize="52" LineStackingStrategy="BlockLineHeight" LineHeight="48" />
+                    <TextBlock x:Name="RateText" Text="" Style="{StaticResource CaptionStyle}" />
+
+                    <ToggleButton x:Name="StartButton" Margin="0,16,0,0" Style="{StaticResource PrimaryToggleStyle}"
+                                  Content="{l:T StartBtn}" t:Ui.CheckedText="{l:T StopBtn}" t:Ui.KeyText="F6"
+                                  Checked="StartButton_Checked" Unchecked="StartButton_Unchecked" />
+                    <!-- Solo en modo "Mantener" (p. ej. "Mantén F6 para clicar") -->
+                    <TextBlock x:Name="HotkeyHintText" Text="" Margin="0,8,0,0" HorizontalAlignment="Center"
+                               Style="{StaticResource CaptionStyle}" />
                 </StackPanel>
 
                 <!-- Opciones esenciales -->
@@ -266,15 +296,107 @@
                 </Border>
             </StackPanel>
 
-            <!-- ================= Página de ajustes ================= -->
-            <!-- Ajustes: con scroll si no cabe (la página principal nunca lo tiene) -->
-            <ScrollViewer x:Name="SettingsScroll" Style="{StaticResource ThinScrollViewerStyle}" Focusable="False">
-            <StackPanel x:Name="SettingsPage" Margin="16,0,16,16" Visibility="Collapsed">
+            <!-- ================= Anti-AFK (experimental) ================= -->
+            <StackPanel x:Name="AntiAfkPage" Margin="12,0,16,16" Visibility="Collapsed">
                 <StackPanel.RenderTransform>
                     <TranslateTransform />
                 </StackPanel.RenderTransform>
 
-                <TextBlock Text="{l:T Settings}" Margin="4,0,0,0" FontFamily="{StaticResource DisplayFont}"
+                <!-- Lectura: estado, cuenta atrás hasta el próximo clic y botón principal -->
+                <StackPanel Margin="2,6,0,16">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="7" Height="7" VerticalAlignment="Center">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{DynamicResource IdleDotBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=AntiAfkSwitch}" Value="True">
+                                            <Setter Property="Fill" Value="{DynamicResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock x:Name="AntiAfkStatusText" Text="{l:T AfkStateOff}" Margin="7,0,0,0" FontSize="12"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=AntiAfkSwitch}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <TextBlock x:Name="AfkCountdownText" Text="15:00" Margin="-2,6,0,0" FontFamily="{StaticResource NumberFont}"
+                               FontSize="52" LineStackingStrategy="BlockLineHeight" LineHeight="48" />
+                    <TextBlock x:Name="AfkDetailText" Text="" TextWrapping="Wrap" Style="{StaticResource CaptionStyle}" />
+
+                    <ToggleButton x:Name="AntiAfkSwitch" Margin="0,16,0,0" Style="{StaticResource PrimaryToggleStyle}"
+                                  Content="{l:T AfkStart}" t:Ui.CheckedText="{l:T AfkStop}" ToolTip="{l:T AntiAfkTip}"
+                                  Checked="AntiAfk_Changed" Unchecked="AntiAfk_Changed" />
+                </StackPanel>
+
+                <Border Style="{StaticResource ListCardStyle}">
+                    <StackPanel>
+                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                            <Button x:Name="AfkPickButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                    Click="AfkPick_Click" Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T AfkPickTip}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&#xE8B0;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource AccentBrush}" Margin="0,0,6,0" />
+                                    <TextBlock Text="{l:T Pick}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{l:T AfkTarget}" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock x:Name="AfkTargetText" Text="{l:T AfkNoTarget}" TextTrimming="CharacterEllipsis"
+                                           Style="{StaticResource RowHintStyle}" />
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                            <TextBlock DockPanel.Dock="Right" Text="min" Style="{StaticResource UnitStyle}" />
+                            <TextBox x:Name="AfkMinutesBox" DockPanel.Dock="Right" Text="15" MaxLength="2" VerticalAlignment="Center"
+                                     Style="{StaticResource SmallFieldStyle}" TextChanged="AfkMinutes_Changed" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{l:T AfkEvery}" Style="{StaticResource RowTitleStyle}"
+                                           ToolTip="{l:T AfkEveryTip}" />
+                                <TextBlock Text="{l:T AfkEveryHint}" Style="{StaticResource RowHintStyle}" />
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                            <Button x:Name="AfkTestButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                    Click="AfkTest_Click" Style="{StaticResource SecondaryButtonStyle}" Content="{l:T AfkTestNow}" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{l:T AfkTest}" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock Text="{l:T AfkTestHint}" Style="{StaticResource RowHintStyle}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="{l:T AfkExperimentalNote}" Margin="2,12,2,0" TextWrapping="Wrap"
+                           Style="{StaticResource CaptionStyle}" />
+            </StackPanel>
+
+            <!-- ================= Página de ajustes ================= -->
+            <!-- Ajustes: con scroll si no cabe (la página principal nunca lo tiene) -->
+            <!-- Visible solo con Ajustes abierto: el contenedor comparte celda con Clics y, aunque su
+                 contenido esté oculto, se quedaría encima tragándose los clics de ratón. -->
+            <ScrollViewer x:Name="SettingsScroll" Style="{StaticResource ThinScrollViewerStyle}" Focusable="False"
+                          Visibility="{Binding Visibility, ElementName=SettingsPage}">
+            <StackPanel x:Name="SettingsPage" Margin="12,0,16,16" Visibility="Collapsed">
+                <StackPanel.RenderTransform>
+                    <TranslateTransform />
+                </StackPanel.RenderTransform>
+
+                <TextBlock Text="{l:T Settings}" Margin="2,4,0,0" FontFamily="{StaticResource DisplayFont}"
                            FontSize="20" FontWeight="SemiBold" />
 
                 <!-- Atajo -->
@@ -378,55 +500,47 @@
                             <TextBlock Text="{l:T StartWithWindows}" Style="{StaticResource RowTitleStyle}"
                                        ToolTip="{l:T StartWithWindowsTip}" />
                         </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <CheckBox x:Name="TranslucentSwitch" DockPanel.Dock="Right" VerticalAlignment="Center" IsChecked="True"
+                                      Style="{StaticResource ToggleSwitchStyle}"
+                                      Checked="Translucent_Changed" Unchecked="Translucent_Changed" />
+                            <TextBlock Text="{l:T Translucent}" Style="{StaticResource RowTitleStyle}"
+                                       ToolTip="{l:T TranslucentTip}" />
+                        </DockPanel>
                     </StackPanel>
                 </Border>
 
-                <!-- Experimental -->
+                <!-- Experimental: al encenderlo aparecen las funciones en pruebas (de momento, el Anti-AFK) -->
                 <TextBlock Text="{l:T Experimental}" Style="{StaticResource GroupLabelStyle}" />
                 <Border Style="{StaticResource ListCardStyle}">
-                    <StackPanel>
-                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
-                            <CheckBox x:Name="AntiAfkSwitch" DockPanel.Dock="Right" VerticalAlignment="Center"
-                                      Style="{StaticResource ToggleSwitchStyle}"
-                                      Checked="AntiAfk_Changed" Unchecked="AntiAfk_Changed" />
-                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                                <TextBlock Text="{l:T AntiAfk}" Style="{StaticResource RowTitleStyle}"
-                                           ToolTip="{l:T AntiAfkTip}" />
-                                <TextBlock x:Name="AntiAfkStatusText" Text="{l:T AfkOffHint}" TextWrapping="Wrap"
-                                           Style="{StaticResource RowHintStyle}" />
-                            </StackPanel>
-                        </DockPanel>
-                        <Border Style="{StaticResource ListDividerStyle}" />
-                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
-                            <Button x:Name="AfkPickButton" DockPanel.Dock="Right" VerticalAlignment="Center"
-                                    Click="AfkPick_Click" Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T AfkPickTip}">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE8B0;" FontFamily="{StaticResource IconFont}" FontSize="12" VerticalAlignment="Center"
-                                               Margin="0,0,6,0" />
-                                    <TextBlock Text="{l:T Pick}" VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                                <TextBlock Text="{l:T AfkTarget}" Style="{StaticResource RowTitleStyle}" />
-                                <TextBlock x:Name="AfkTargetText" Text="{l:T AfkNoTarget}" TextTrimming="CharacterEllipsis"
-                                           Style="{StaticResource RowHintStyle}" />
-                            </StackPanel>
-                        </DockPanel>
-                        <Border Style="{StaticResource ListDividerStyle}" />
-                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
-                            <TextBlock DockPanel.Dock="Right" Text="min" Style="{StaticResource UnitStyle}" />
-                            <TextBox x:Name="AfkMinutesBox" DockPanel.Dock="Right" Text="15" MaxLength="2" VerticalAlignment="Center"
-                                     Style="{StaticResource SmallFieldStyle}" TextChanged="AfkMinutes_Changed" />
-                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-                                <TextBlock Text="{l:T AfkEvery}" Style="{StaticResource RowTitleStyle}"
-                                           ToolTip="{l:T AfkEveryTip}" />
-                                <TextBlock Text="{l:T AfkEveryHint}" Style="{StaticResource RowHintStyle}" />
-                            </StackPanel>
-                        </DockPanel>
-                    </StackPanel>
+                    <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                        <CheckBox x:Name="ExperimentalSwitch" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                  Style="{StaticResource ToggleSwitchStyle}"
+                                  Checked="Experimental_Changed" Unchecked="Experimental_Changed" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Text="{l:T ExperimentalTitle}" Style="{StaticResource RowTitleStyle}" />
+                            <TextBlock Text="{l:T ExperimentalHint}" Style="{StaticResource RowHintStyle}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Acerca de -->
+                <TextBlock Text="{l:T About}" Style="{StaticResource GroupLabelStyle}" />
+                <Border Style="{StaticResource ListCardStyle}">
+                    <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                        <Button x:Name="OpenDataFolderButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                Click="OpenDataFolder_Click" Style="{StaticResource SecondaryButtonStyle}"
+                                Content="{l:T OpenDataFolder}" ToolTip="{l:T OpenDataFolderTip}" />
+                        <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock x:Name="AboutVersionText" Text="AutoClik" Style="{StaticResource RowTitleStyle}" />
+                            <TextBlock Text="{l:T AboutHint}" Style="{StaticResource RowHintStyle}" />
+                        </StackPanel>
+                    </DockPanel>
                 </Border>
             </StackPanel>
             </ScrollViewer>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

@@ -23,7 +23,7 @@ Start-Sleep -Milliseconds 800
 [U]::SetForegroundWindow($hwnd) | Out-Null
 $root = $AE::FromHandle($hwnd)
 function Find($id) { $root.FindFirst([Windows.Automation.TreeScope]::Descendants, (New-Object Windows.Automation.PropertyCondition($AE::AutomationIdProperty, $id))) }
-function State { "estado='{0}' tecla='{1}' pista='{2}'" -f (Find "StatusText").Current.Name, (Find "HotkeyButton").Current.Name, (Find "HotkeyHintText").Current.Name }
+function State { "estado='{0}' tecla='{1}' pista='{2}'" -f (Find "StatusText").Current.Name, (Find "HotkeyButton").Current.Name, (Find "StartButton").Current.HelpText }
 (Find "SettingsButton").GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle(); Start-Sleep -Milliseconds 400
 function ToggleKey { (Find "HotkeyButton").GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle(); Start-Sleep -Milliseconds 200 }
 

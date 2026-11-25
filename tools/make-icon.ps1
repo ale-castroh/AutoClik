@@ -1,4 +1,4 @@
-# Genera src/Autoclicker/Assets/app.ico (16-256 px) dibujándolo con WPF.
+﻿# Genera src/Autoclicker/Assets/app.ico (16-256 px) dibujándolo con WPF.
 # Uso: powershell -NoProfile -File tools\make-icon.ps1
 Add-Type -AssemblyName PresentationCore, PresentationFramework, WindowsBase
 
@@ -10,28 +10,19 @@ function Render-Png([int]$size) {
     $visual = New-Object System.Windows.Media.DrawingVisual
     $dc = $visual.RenderOpen()
 
-    $grad = New-Object System.Windows.Media.LinearGradientBrush
-    $grad.StartPoint = New-Object System.Windows.Point 0, 0
-    $grad.EndPoint = New-Object System.Windows.Point 1, 1
-    $grad.GradientStops.Add((New-Object System.Windows.Media.GradientStop ([System.Windows.Media.Color]::FromRgb(0x1E, 0x90, 0xFF)), 0))
-    $grad.GradientStops.Add((New-Object System.Windows.Media.GradientStop ([System.Windows.Media.Color]::FromRgb(0x6C, 0x4D, 0xF0)), 1))
-
-    $margin = [Math]::Max(0.5, $s * 0.04)
-    $rect = New-Object System.Windows.Rect $margin, $margin, ($s - 2 * $margin), ($s - 2 * $margin)
-    $dc.DrawRoundedRectangle($grad, $null, $rect, $s * 0.24, $s * 0.24)
-
-    # Brillo suave arriba
-    $shine = New-Object System.Windows.Media.LinearGradientBrush
-    $shine.StartPoint = New-Object System.Windows.Point 0.5, 0
-    $shine.EndPoint = New-Object System.Windows.Point 0.5, 0.6
-    $shine.GradientStops.Add((New-Object System.Windows.Media.GradientStop ([System.Windows.Media.Color]::FromArgb(0x40, 255, 255, 255)), 0))
-    $shine.GradientStops.Add((New-Object System.Windows.Media.GradientStop ([System.Windows.Media.Color]::FromArgb(0, 255, 255, 255)), 1))
-    $dc.DrawRoundedRectangle($shine, $null, $rect, $s * 0.24, $s * 0.24)
-
-    $typeface = New-Object System.Windows.Media.Typeface "Segoe Fluent Icons"
-    $text = New-Object System.Windows.Media.FormattedText ([string][char]0xE8B0), ([Globalization.CultureInfo]::InvariantCulture), `
-        ([System.Windows.FlowDirection]::LeftToRight), $typeface, ($s * 0.6), ([System.Windows.Media.Brushes]::White), 1.0
-    $dc.DrawText($text, (New-Object System.Windows.Point (($s - $text.Width) / 2 + $s * 0.03), (($s - $text.Height) / 2)))
+    # Logo sin fondo: ratón blanco con contorno grafito + chispa ámbar (mismas formas que IconFactory.cs)
+    $k = $s / 24.0
+    $scale = New-Object System.Windows.Media.ScaleTransform $k, $k
+    function Shape([string]$d) { $g = [System.Windows.Media.Geometry]::Parse($d).Clone(); $g.Transform = $scale; return $g }
+    $inkBrush = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0x1C, 0x1E, 0x22))
+    $ink = New-Object System.Windows.Media.Pen $inkBrush, ([Math]::Max(1.0, 1.4 * $k))
+    $ink.LineJoin = 'Round'; $ink.StartLineCap = 'Round'; $ink.EndLineCap = 'Round'
+    $sparkBrush = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0xFF, 0xB0, 0x00))
+    $spark = New-Object System.Windows.Media.Pen $sparkBrush, ([Math]::Max(1.0, 1.2 * $k))
+    $spark.StartLineCap = 'Round'; $spark.EndLineCap = 'Round'
+    $dc.DrawGeometry([System.Windows.Media.Brushes]::White, $ink, (Shape "M12,5.0 C14.35,5.0 16.25,6.90 16.25,9.25 L16.25,14.75 C16.25,17.10 14.35,19.0 12,19.0 C9.65,19.0 7.75,17.10 7.75,14.75 L7.75,9.25 C7.75,6.90 9.65,5.0 12,5.0 Z"))
+    $dc.DrawGeometry($null, $ink, (Shape "M7.75,10.5 L16.25,10.5 M12,5.0 L12,10.5"))
+    $dc.DrawGeometry($null, $spark, (Shape "M5.98,5.77 L3.56,4.37 M7.09,4.34 L5.11,2.36 M8.52,3.23 L7.12,0.81"))
     $dc.Close()
 
     $bmp = New-Object System.Windows.Media.Imaging.RenderTargetBitmap $size, $size, 96, 96, ([System.Windows.Media.PixelFormats]::Pbgra32)

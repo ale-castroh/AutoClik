@@ -28,6 +28,9 @@ public sealed class AntiAfk
     private DateTime _next;
     private DateTime? _idleWaitStarted;
     private string _status = "";
+    private string _countdown = "";
+    private string _detail = "";
+    private string? _transient; // aviso puntual con el anti-AFK apagado (p. ej. "Clic de prueba hecho")
     private string? _situation; // clave de texto del estado puntual, o null = cuenta atrás
 
     /// <summary>Solo pruebas: intervalo en segundos en vez de minutos (--antiafk-seconds=N).</summary>
@@ -50,13 +53,22 @@ public sealed class AntiAfk
     /// <summary>true = posponer (el autoclicker está clicando, se graba, etc.).</summary>
     public Func<bool>? ShouldWait { get; set; }
 
-    /// <summary>Texto de estado para la interfaz (cambia como mucho una vez por segundo).</summary>
+    /// <summary>Línea de estado (p. ej. "Activo en Roblox"). Cambia como mucho una vez por segundo.</summary>
     public string Status => _status;
+
+    /// <summary>Cuenta atrás hasta el próximo clic, "mm:ss" (apagado: el intervalo elegido).</summary>
+    public string Countdown => _countdown;
 
     public event Action? StatusChanged;
 
+    /// <summary>Línea secundaria: último clic y cuántos van en esta sesión.</summary>
+    public string Detail => _detail;
+
     /// <summary>Clics hechos desde que se abrió la app.</summary>
     public int PulseCount { get; private set; }
+
+    /// <summary>Cuándo se hizo el último clic (null = ninguno todavía).</summary>
+    public DateTime? LastPulse { get; private set; }
 
     public AntiAfk()
     {
@@ -90,6 +102,7 @@ public sealed class AntiAfk
         {
             if (_enabled == value) return;
             _enabled = value;
+            _transient = null;
             if (value) { Restart(); _timer.Start(); }
             else _timer.Stop();
             Tick();
@@ -102,17 +115,17 @@ public sealed class AntiAfk
         _next = DateTime.Now + Interval;
         _idleWaitStarted = null;
         _situation = null;
-        if (_enabled) Tick();
+        Tick(); // también apagado: así se ven ya el intervalo y la explicación
     }
 
     private void Tick()
     {
         if (_busy) return;
-        if (!_enabled) { SetStatus(Strings.T("AfkOffHint")); return; }
-        if (ProcessName == null) { SetStatus(Strings.T("AfkNotConfigured")); return; }
+        if (!_enabled) { Show(_transient ?? Strings.T("AfkStateOff"), Clock(Interval)); return; }
+        if (ProcessName == null) { Show(Strings.T("AfkNotConfigured"), "--:--"); return; }
 
         DateTime now = DateTime.Now;
-        if (now < _next) { SetStatus(Countdown(now)); return; }
+        if (now < _next) { Show(StateText(), Clock(_next - now)); return; }
 
         if (ShouldWait?.Invoke() == true) { Postpone(now, "AfkPaused"); return; }
 
@@ -124,7 +137,7 @@ public sealed class AntiAfk
         {
             _next = now + Interval;
             _situation = "AfkInWindow";
-            SetStatus(Countdown(now));
+            Show(StateText(), Clock(Interval));
             return;
         }
 
@@ -134,12 +147,30 @@ public sealed class AntiAfk
             _idleWaitStarted ??= now;
             if (now - _idleWaitStarted < MaxIdleWait)
             {
-                SetStatus(Strings.T("AfkWaitingIdle"));
+                Show(Strings.T("AfkWaitingIdle"), Clock(TimeSpan.Zero));
                 return;
             }
         }
         _idleWaitStarted = null;
+        StartPulse(target);
+    }
 
+    /// <summary>
+    /// "Probar ahora": un clic inmediato, sin esperar al intervalo ni a que el PC esté quieto
+    /// (lo acaba de pedir el usuario). Si el anti-AFK está activo, la cuenta empieza de nuevo.
+    /// </summary>
+    public void PulseNow()
+    {
+        if (_busy) return;
+        if (ProcessName == null) { Show(Strings.T("AfkNotConfigured"), _countdown); return; }
+        nint target = FindWindow(ProcessName);
+        if (target == 0) { Show(Strings.F("AfkMissing", DisplayName ?? ""), _countdown); return; }
+        StartPulse(target);
+    }
+
+    /// <summary>Hace el clic fuera del hilo de la interfaz y actualiza el estado al terminar.</summary>
+    private void StartPulse(nint target)
+    {
         _busy = true;
         int x = X, y = Y;
         var dispatcher = Dispatcher.CurrentDispatcher;
@@ -150,9 +181,16 @@ public sealed class AntiAfk
                 _busy = false;
                 bool ok = t.Status == TaskStatus.RanToCompletion && t.Result;
                 if (t.Exception != null) ErrorLog.Write("anti-AFK", t.Exception.GetBaseException());
-                if (ok) { PulseCount++; _next = DateTime.Now + Interval; _situation = null; }
-                else Postpone(DateTime.Now, "AfkFailed");
-                SetStatus(Countdown(DateTime.Now));
+                if (ok)
+                {
+                    PulseCount++;
+                    LastPulse = DateTime.Now;
+                    _next = DateTime.Now + Interval;
+                    _situation = null;
+                }
+                if (!_enabled) { _transient = Strings.T(ok ? "AfkTestDone" : "AfkFailed"); Tick(); return; }
+                if (!ok) { Postpone(DateTime.Now, "AfkFailed"); return; }
+                Tick();
             });
         });
     }
@@ -161,28 +199,33 @@ public sealed class AntiAfk
     {
         _next = now + (Interval < RetrySoon ? Interval : RetrySoon);
         _situation = situation;
-        SetStatus(Countdown(now));
+        Show(StateText(), Clock(_next - now));
     }
 
-    private string Countdown(DateTime now)
+    /// <summary>Estado con el anti-AFK activo: normal o la situación puntual (no está abierto, etc.).</summary>
+    private string StateText() => _situation switch
     {
-        TimeSpan left = _next - now;
-        string next = left.TotalSeconds < 60
-            ? Strings.F("AfkNextSeconds", Math.Max(1, (int)Math.Ceiling(left.TotalSeconds)))
-            : Strings.F("AfkNextMinutes", (int)Math.Ceiling(left.TotalMinutes));
-        return _situation switch
-        {
-            "AfkMissing" => Strings.F("AfkMissing", DisplayName ?? ""),
-            "AfkInWindow" => Strings.F("AfkInWindow", DisplayName ?? "") + " · " + next,
-            null => next,
-            _ => Strings.T(_situation) + " · " + next,
-        };
+        null => Strings.F("AfkStateActive", DisplayName ?? ""),
+        "AfkMissing" => Strings.F("AfkMissing", DisplayName ?? ""),
+        "AfkInWindow" => Strings.F("AfkInWindow", DisplayName ?? ""),
+        _ => Strings.T(_situation),
+    };
+
+    private static string Clock(TimeSpan t)
+    {
+        int seconds = Math.Max(0, (int)Math.Ceiling(t.TotalSeconds));
+        return $"{seconds / 60:00}:{seconds % 60:00}";
     }
 
-    private void SetStatus(string text)
+    private void Show(string state, string countdown)
     {
-        if (text == _status) return;
-        _status = text;
+        string detail = LastPulse is not { } last ? Strings.T(_enabled ? "AfkNever" : "AfkOffHint")
+            : (DateTime.Now - last).TotalMinutes < 1 ? Strings.F("AfkLastJust", PulseCount)
+            : Strings.F("AfkLast", (int)(DateTime.Now - last).TotalMinutes, PulseCount);
+        if (state == _status && countdown == _countdown && detail == _detail) return;
+        _status = state;
+        _countdown = countdown;
+        _detail = detail;
         StatusChanged?.Invoke();
     }
 

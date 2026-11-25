@@ -30,7 +30,12 @@ function Find($id) { $root.FindFirst($TS::Descendants, (New-Object Windows.Autom
 function Tog($id) { (Find $id).GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle() }
 function Text($id) { (Find $id).Current.Name }
 
+# Sin "Funciones experimentales" el Anti-AFK no aparece en la barra lateral (2.0)
+"0a) Sin experimentales: Anti-AFK en la barra=" + ($null -ne (Find "NavAntiAfkButton")) + " (esperado False)"
 Tog "SettingsButton"; Start-Sleep -Milliseconds 400
+Tog "ExperimentalSwitch"; Start-Sleep -Milliseconds 300
+"0b) Con experimentales: Anti-AFK en la barra=" + ($null -ne (Find "NavAntiAfkButton")) + " (esperado True)"
+Tog "NavAntiAfkButton"; Start-Sleep -Milliseconds 400
 "1) Sin elegir: ventana='$(Text "AfkTargetText")'  estado='$(Text "AntiAfkStatusText")'"
 
 # 2) Elegir la diana con la cruz: clic en (240,240) = punto (40,40) dentro de ella
@@ -40,6 +45,12 @@ At 240 240; [R]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero); Start-Sleep -Millisec
 Start-Sleep -Milliseconds 900
 "2) Elegida: ventana='$(Text "AfkTargetText")'  (esperado 'Bench target · X 40 · Y 40')"
 
+# 2b) Probar ahora: un clic inmediato aunque el anti-AFK esté apagado
+At 1000 800
+(Find "AfkTestButton").GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+Start-Sleep -Milliseconds 1200
+"2b) Probar ahora: estado='$(Text "AntiAfkStatusText")'  detalle='$(Text "AfkDetailText")'  delante='$([R]::ForegroundTitle())'  cursor=$(Pos) (esperado 'Clic de prueba hecho', AutoClik, (1000,800))"
+
 # 3) Activar y dejar el PC quieto 9 s: debe clicar la diana una o dos veces y volver
 Tog "AntiAfkSwitch"; Start-Sleep -Milliseconds 300
 At 1000 800
@@ -48,14 +59,17 @@ $before = Pos
 Start-Sleep -Seconds 9
 "3b) Tras 9 s: estado='$(Text "AntiAfkStatusText")'  delante='$([R]::ForegroundTitle())' (esperado AutoClik)  cursor=$(Pos) (esperado $before)"
 
-# 4) Desactivar: ya no debe clicar más
-Tog "AntiAfkSwitch"; Start-Sleep -Milliseconds 300
-"4) Desactivado: estado='$(Text "AntiAfkStatusText")'"
+# 4) Apagar las funciones experimentales con el anti-AFK activo: se detiene y desaparece
+"4a) Antes de apagar: anti-AFK activo=" + ((Find "AntiAfkSwitch").GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Current.ToggleState)
+Tog "SettingsButton"; Start-Sleep -Milliseconds 400
+Tog "ExperimentalSwitch"; Start-Sleep -Milliseconds 300
+"4b) Sin experimentales: Anti-AFK en la barra=" + ($null -ne (Find "NavAntiAfkButton")) + " (esperado False)"
 Tog "SettingsButton"; Start-Sleep -Milliseconds 300
+"4c) Vuelta a Clics: botón Iniciar visible=" + ($null -ne (Find "StartButton"))
 
 $proc.CloseMainWindow() | Out-Null; $proc.WaitForExit(4000) | Out-Null
 $bench.WaitForExit(); Get-Content $out
 $json = Get-Content "$data\settings.json" -Raw | ConvertFrom-Json
-"5) Guardado: proceso={0} título='{1}' punto=({2},{3}) minutos={4} activado={5}" -f $json.Prefs.AntiAfkProcess, $json.Prefs.AntiAfkTitle, $json.Prefs.AntiAfkX, $json.Prefs.AntiAfkY, $json.Prefs.AntiAfkMinutes, $json.Prefs.AntiAfkEnabled
+"5) Guardado: proceso={0} título='{1}' punto=({2},{3}) minutos={4} activado={5} experimentales={6} (esperado activado=False, experimentales=False)" -f $json.Prefs.AntiAfkProcess, $json.Prefs.AntiAfkTitle, $json.Prefs.AntiAfkX, $json.Prefs.AntiAfkY, $json.Prefs.AntiAfkMinutes, $json.Prefs.AntiAfkEnabled, $json.Prefs.Experimental
 "6) error.log creado: " + (Test-Path (Join-Path $data "error.log")) + " (esperado False)"
 [System.Windows.Forms.Cursor]::Position = $original

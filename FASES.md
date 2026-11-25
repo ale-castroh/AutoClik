@@ -102,6 +102,38 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 2.0.0 — Rediseño completo ✅
+- **Barra lateral** con una sección por función (Clics, Anti-AFK, Ajustes abajo); la sección activa
+  lleva una raya de acento y un punto verde si la función está en marcha. Ventana de 440 px (antes 380).
+  Las secciones miden lo mismo que Clics; Ajustes se desplaza si no cabe. Clics sigue sin scroll.
+- **Aspecto nuevo** (el usuario rechazó un primer intento por "botones de mala calidad"): lectura grande
+  con Bahnschrift (contador / cuenta atrás) y estado con punto gris o verde; botón principal ancho y
+  rectangular con la tecla dentro (Iniciar → Detener con contorno); opciones en una sola hoja con líneas
+  finas; la opción elegida de los selectores se eleva en gris (no en acento); campos con línea inferior;
+  botones secundarios, teclas e interruptores redibujados con la misma altura y bordes.
+- Acento de Windows: tono base para rellenos (texto blanco) en oscuro, "Dark 1" en claro; para iconos y
+  textos de acento, "Light 1" / "Dark 2" (`AccentTextBrush`). Antes, en oscuro, salía un azul pálido.
+- Iconos que se veían descentrados (▶, ■, logo): ahora son formas dibujadas, no letras de una fuente.
+- **Fondo translúcido** (acrílico, Windows 11 22H2+), activado por defecto; con él las hojas usan un fondo
+  más opaco (`CardTranslucentBrush`). Se puede volver a Mica en Ajustes → General.
+- **Logo nuevo** propio (antes un cursor sobre azul, que recordaba a otros autoclickers): ratón blanco con
+  contorno grafito, centrado, y una chispa ámbar de tres rayas iguales en abanico, separada del ratón;
+  sin fondo. En la bandeja la chispa se pone verde mientras clica. Las mismas formas en
+  `Theme/Controls.xaml`, `Interop/IconFactory.cs` y `tools/make-icon.ps1`.
+- **Funciones experimentales** (Ajustes → Experimental, apagado por defecto): sin ellas el Anti-AFK no
+  aparece; al apagarlas se detiene y se vuelve a Clics. Quien ya usaba el anti-AFK (1.4) lo tiene encendido.
+- Anti-AFK: sección propia con cuenta atrás, estado ("Activo en Roblox"), "Último clic hace 2 min, 4 en
+  esta sesión" y **Probar ahora** (un clic inmediato).
+- Ajustes → Acerca de: versión y botón para abrir la carpeta de ajustes y `error.log`.
+- Pruebas: la de anti-AFK activa antes las funciones experimentales y comprueba que se ocultan; la del atajo
+  lee la pista de `StartButton` (`AutomationProperties.HelpText`), porque la tecla va dentro del botón.
+- **Corregido (fallo desde 1.4.0):** con el ratón no se podía pulsar nada de la página principal (Iniciar,
+  intervalo, tipo...). El contenedor con scroll de Ajustes compartía celda con ella y, aunque su contenido
+  estuviera oculto, quedaba encima tragándose los clics. Ahora se oculta entero fuera de Ajustes. Las
+  pruebas no lo vieron porque pulsaban por UI Automation: nueva `tests/ui/clics-reales.ps1` con clics de
+  ratón reales en cada sección (comprueba antes de cada clic que debajo está su propia ventana y no arranca
+  si hay otro AutoClik abierto).
+
 ## Versión 1.4.0 — Anti-AFK experimental ✅
 - **Ajustes → Experimental → Anti-AFK** (`Input/AntiAfk.cs`): cada 1–18 min (15 por defecto) trae al
   frente la ventana elegida, hace UN clic real en el punto elegido y devuelve la ventana activa y el

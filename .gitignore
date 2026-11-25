@@ -6,3 +6,6 @@ obj/
 
 # Contexto para Claude Code: solo en este PC, no se sube a GitHub
 CLAUDE.md
+
+# Vista previa que genera tools/make-icon.ps1 (solo para revisar el icono)
+src/Autoclicker/Assets/app-preview.png
