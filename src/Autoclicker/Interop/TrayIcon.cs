@@ -14,7 +14,7 @@ internal sealed unsafe class TrayIcon : IDisposable
 
     private readonly nint _hwnd;
     private nint _icon;
-    private string _tooltip = "Autoclicker";
+    private string _tooltip = "AutoClik";
     private bool _added;
 
     public event Action? LeftClick;
@@ -66,7 +66,7 @@ internal sealed unsafe class TrayIcon : IDisposable
             uCallbackMessage = CallbackMessage,
             hIcon = _icon,
         };
-        string tip = _tooltip.Length > 127 ? _tooltip[..127] : _tooltip;
+        string tip = _tooltip.Length > 127 ? _tooltip.Substring(0, 127) : _tooltip;
         for (int i = 0; i < tip.Length; i++) data.szTip[i] = tip[i];
         Shell_NotifyIconW(message, &data);
     }

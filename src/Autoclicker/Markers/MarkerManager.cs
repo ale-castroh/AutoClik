@@ -106,7 +106,7 @@ public sealed class MarkerManager
     private void Move(MarkerWindow window, int delta)
     {
         int from = _windows.IndexOf(window);
-        int to = Math.Clamp(from + delta, 0, _windows.Count - 1);
+        int to = Compat.Clamp(from + delta, 0, _windows.Count - 1);
         if (from == to) return;
         _windows.RemoveAt(from);
         _windows.Insert(to, window);

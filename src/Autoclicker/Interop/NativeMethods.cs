@@ -28,17 +28,17 @@ internal static partial class NativeMethods
         public MARGINS(int all) => Left = Right = Top = Bottom = all;
     }
 
-    [LibraryImport("dwmapi.dll")]
-    public static partial int DwmSetWindowAttribute(nint hwnd, int attribute, ref int value, int size);
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(nint hwnd, int attribute, ref int value, int size);
 
-    [LibraryImport("dwmapi.dll")]
-    public static partial int DwmExtendFrameIntoClientArea(nint hwnd, ref MARGINS margins);
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmExtendFrameIntoClientArea(nint hwnd, ref MARGINS margins);
 
-    [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
-    public static partial nint GetWindowLongPtr(nint hwnd, int index);
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    public static extern nint GetWindowLongPtr(nint hwnd, int index);
 
-    [LibraryImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
-    public static partial nint SetWindowLongPtr(nint hwnd, int index, nint value);
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+    public static extern nint SetWindowLongPtr(nint hwnd, int index, nint value);
 
     // ---- Atajos globales ----
     public const int WM_HOTKEY = 0x0312;
@@ -57,20 +57,20 @@ internal static partial class NativeMethods
     public const int VK_RWIN = 0x5C;
     public const int VK_F6 = 0x75;
 
-    [LibraryImport("user32.dll", SetLastError = true)]
-    public static partial int RegisterHotKey(nint hwnd, int id, uint modifiers, uint vk);
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int RegisterHotKey(nint hwnd, int id, uint modifiers, uint vk);
 
-    [LibraryImport("user32.dll", SetLastError = true)]
-    public static partial int UnregisterHotKey(nint hwnd, int id);
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern int UnregisterHotKey(nint hwnd, int id);
 
-    [LibraryImport("user32.dll")]
-    public static partial short GetAsyncKeyState(int vk);
+    [DllImport("user32.dll")]
+    public static extern short GetAsyncKeyState(int vk);
 
-    [LibraryImport("user32.dll", EntryPoint = "MapVirtualKeyW")]
-    public static partial uint MapVirtualKey(uint code, uint mapType);
+    [DllImport("user32.dll", EntryPoint = "MapVirtualKeyW")]
+    public static extern uint MapVirtualKey(uint code, uint mapType);
 
-    [LibraryImport("user32.dll", EntryPoint = "GetKeyNameTextW")]
-    public static unsafe partial int GetKeyNameText(int lParam, char* buffer, int size);
+    [DllImport("user32.dll", EntryPoint = "GetKeyNameTextW")]
+    public static unsafe extern int GetKeyNameText(int lParam, char* buffer, int size);
 
     // ---- Bandeja del sistema ----
     public const int WM_APP = 0x8000;
@@ -100,33 +100,33 @@ internal static partial class NativeMethods
         public nint hBalloonIcon;
     }
 
-    [LibraryImport("shell32.dll")]
-    public static unsafe partial int Shell_NotifyIconW(uint message, NOTIFYICONDATAW* data);
+    [DllImport("shell32.dll")]
+    public static unsafe extern int Shell_NotifyIconW(uint message, void* data);
 
-    [LibraryImport("user32.dll", EntryPoint = "RegisterWindowMessageW", StringMarshalling = StringMarshalling.Utf16)]
-    public static partial uint RegisterWindowMessage(string name);
+    [DllImport("user32.dll", EntryPoint = "RegisterWindowMessageW", CharSet = CharSet.Unicode)]
+    public static extern uint RegisterWindowMessage(string name);
 
-    [LibraryImport("user32.dll")]
-    public static unsafe partial nint CreateIcon(nint instance, int width, int height, byte planes, byte bitsPixel, byte* andBits, byte* xorBits);
+    [DllImport("user32.dll")]
+    public static unsafe extern nint CreateIcon(nint instance, int width, int height, byte planes, byte bitsPixel, byte* andBits, byte* xorBits);
 
-    [LibraryImport("user32.dll")]
-    public static partial int DestroyIcon(nint icon);
+    [DllImport("user32.dll")]
+    public static extern int DestroyIcon(nint icon);
 
-    [LibraryImport("user32.dll")]
-    public static partial int SetForegroundWindow(nint hwnd);
+    [DllImport("user32.dll")]
+    public static extern int SetForegroundWindow(nint hwnd);
 
     // ---- Ventanas / cursor ----
     [StructLayout(LayoutKind.Sequential)]
     public struct POINT { public int X, Y; }
 
-    [LibraryImport("user32.dll")]
-    public static partial int GetCursorPos(out POINT point);
+    [DllImport("user32.dll")]
+    public static extern int GetCursorPos(out POINT point);
 
     public const int SM_XVIRTUALSCREEN = 76, SM_YVIRTUALSCREEN = 77, SM_CXVIRTUALSCREEN = 78, SM_CYVIRTUALSCREEN = 79;
     public const int SM_CXSMICON = 49;
 
-    [LibraryImport("user32.dll")]
-    public static partial int GetSystemMetrics(int index);
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int index);
 
     public const uint SWP_NOSIZE = 0x0001, SWP_NOMOVE = 0x0002, SWP_NOZORDER = 0x0004, SWP_NOACTIVATE = 0x0010;
     public static readonly nint HWND_TOPMOST = -1;
@@ -139,8 +139,8 @@ internal static partial class NativeMethods
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int Left, Top, Right, Bottom; }
 
-    [LibraryImport("user32.dll")]
-    public static partial int GetWindowRect(nint hwnd, out RECT rect);
+    [DllImport("user32.dll")]
+    public static extern int GetWindowRect(nint hwnd, out RECT rect);
 
     // ---- Hook de ratón de bajo nivel y monitores ----
     public const int WH_MOUSE_LL = 14;
@@ -149,14 +149,14 @@ internal static partial class NativeMethods
     public const int WM_MBUTTONDOWN = 0x0207, WM_MBUTTONUP = 0x0208;
     public const uint GA_ROOT = 2;
 
-    [LibraryImport("user32.dll")]
-    public static partial nint WindowFromPoint(POINT point);
+    [DllImport("user32.dll")]
+    public static extern nint WindowFromPoint(POINT point);
 
-    [LibraryImport("user32.dll")]
-    public static partial nint GetAncestor(nint hwnd, uint flags);
+    [DllImport("user32.dll")]
+    public static extern nint GetAncestor(nint hwnd, uint flags);
 
-    [LibraryImport("user32.dll")]
-    public static partial uint GetWindowThreadProcessId(nint hwnd, out uint processId);
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(nint hwnd, out uint processId);
     public const uint LLMHF_INJECTED = 0x00000001;
     public const uint MONITOR_DEFAULTTONEAREST = 2;
 
@@ -176,26 +176,35 @@ internal static partial class NativeMethods
         public uint dwFlags;
     }
 
-    [LibraryImport("user32.dll", SetLastError = true)]
-    public static unsafe partial nint SetWindowsHookExW(int idHook, delegate* unmanaged[Stdcall]<int, nint, nint, nint> proc, nint module, uint threadId);
+    /// <summary>Procedimiento de un hook de bajo nivel (hay que mantener viva la referencia al delegado).</summary>
+    public delegate nint LowLevelHookProc(int code, nint wParam, nint lParam);
 
-    [LibraryImport("user32.dll")]
-    public static partial int UnhookWindowsHookEx(nint hook);
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern nint SetWindowsHookExW(int idHook, LowLevelHookProc proc, nint module, uint threadId);
 
-    [LibraryImport("user32.dll")]
-    public static partial nint CallNextHookEx(nint hook, int code, nint wParam, nint lParam);
+    [DllImport("user32.dll")]
+    public static extern int UnhookWindowsHookEx(nint hook);
 
-    [LibraryImport("kernel32.dll")]
-    public static partial nint GetModuleHandleW(nint name);
+    [DllImport("user32.dll")]
+    public static extern nint CallNextHookEx(nint hook, int code, nint wParam, nint lParam);
 
-    [LibraryImport("user32.dll")]
-    public static partial nint MonitorFromPoint(POINT pt, uint flags);
+    [DllImport("kernel32.dll")]
+    public static extern nint GetModuleHandleW(nint name);
 
-    [LibraryImport("user32.dll")]
-    public static unsafe partial int GetMonitorInfoW(nint monitor, MONITORINFO* info);
+    [DllImport("user32.dll")]
+    public static extern nint MonitorFromPoint(POINT pt, uint flags);
 
-    [LibraryImport("kernel32.dll")]
-    public static partial int SetProcessWorkingSetSize(nint process, nint min, nint max);
+    [DllImport("user32.dll")]
+    public static unsafe extern int GetMonitorInfoW(nint monitor, MONITORINFO* info);
+
+    public static readonly nint HWND_NOTOPMOST = -2;
+    public const uint ASFW_ANY = unchecked((uint)-1);
+
+    [DllImport("user32.dll")]
+    public static extern int AllowSetForegroundWindow(uint processId);
+
+    [DllImport("kernel32.dll")]
+    public static extern int SetProcessWorkingSetSize(nint process, nint min, nint max);
 
     public static void SetExStyle(nint hwnd, long add, long remove)
     {
@@ -203,8 +212,8 @@ internal static partial class NativeMethods
         SetWindowLongPtr(hwnd, GWL_EXSTYLE, (nint)((style | add) & ~remove));
     }
 
-    [LibraryImport("user32.dll")]
-    public static partial int SetWindowPos(nint hwnd, nint insertAfter, int x, int y, int cx, int cy, uint flags);
+    [DllImport("user32.dll")]
+    public static extern int SetWindowPos(nint hwnd, nint insertAfter, int x, int y, int cx, int cy, uint flags);
 
     public static void SetDwmInt(nint hwnd, int attribute, int value)
         => DwmSetWindowAttribute(hwnd, attribute, ref value, sizeof(int));

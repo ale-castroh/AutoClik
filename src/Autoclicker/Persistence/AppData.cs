@@ -1,5 +1,4 @@
 using Autoclicker.Engine;
-
 using Autoclicker.Localization;
 
 namespace Autoclicker.Persistence;
@@ -22,6 +21,31 @@ public sealed class AppData
         if (Profiles.Count == 0) Profiles[DefaultProfileName] = new();
         if (CurrentProfile is null || !Profiles.ContainsKey(CurrentProfile)) CurrentProfile = Profiles.Keys.First();
     }
+
+    // ---------------- JSON ----------------
+
+    internal Dictionary<string, object?> ToJson() => new()
+    {
+        ["Version"] = Version,
+        ["CurrentProfile"] = CurrentProfile,
+        ["Profiles"] = Profiles.ToDictionary(kv => kv.Key, kv => (object?)kv.Value.ToJson()),
+        ["Prefs"] = Prefs.ToJson(),
+    };
+
+    internal static AppData FromJson(JsonObj j)
+    {
+        var data = new AppData
+        {
+            Version = j.Int("Version", 1),
+            Prefs = GlobalPrefs.FromJson(j.Obj("Prefs")),
+            Profiles = new Dictionary<string, ProfileData>(),
+        };
+        foreach (var kv in j.Obj("Profiles").Entries)
+            data.Profiles[kv.Key] = ProfileData.FromJson(JsonObj.From(kv.Value));
+        data.CurrentProfile = j.Str("CurrentProfile") ?? "";
+        data.Normalize();
+        return data;
+    }
 }
 
 /// <summary>Preferencias comunes a todos los perfiles.</summary>
@@ -36,6 +60,36 @@ public sealed class GlobalPrefs
     public bool Pinned { get; set; }
     public double? WindowLeft { get; set; }
     public double? WindowTop { get; set; }
+
+    internal Dictionary<string, object?> ToJson() => new()
+    {
+        ["HotkeyVk"] = HotkeyVk,
+        ["HotkeyModifiers"] = HotkeyModifiers,
+        ["HotkeyHoldMode"] = HotkeyHoldMode,
+        ["MinimizeToTray"] = MinimizeToTray,
+        ["CloseToTray"] = CloseToTray,
+        ["EmergencyCorner"] = EmergencyCorner,
+        ["Pinned"] = Pinned,
+        ["WindowLeft"] = WindowLeft,
+        ["WindowTop"] = WindowTop,
+    };
+
+    internal static GlobalPrefs FromJson(JsonObj j)
+    {
+        var d = new GlobalPrefs();
+        return new GlobalPrefs
+        {
+            HotkeyVk = j.Int("HotkeyVk", d.HotkeyVk),
+            HotkeyModifiers = (uint)j.Int("HotkeyModifiers", 0),
+            HotkeyHoldMode = j.Bool("HotkeyHoldMode", d.HotkeyHoldMode),
+            MinimizeToTray = j.Bool("MinimizeToTray", d.MinimizeToTray),
+            CloseToTray = j.Bool("CloseToTray", d.CloseToTray),
+            EmergencyCorner = j.Bool("EmergencyCorner", d.EmergencyCorner),
+            Pinned = j.Bool("Pinned", d.Pinned),
+            WindowLeft = j.NumOrNull("WindowLeft"),
+            WindowTop = j.NumOrNull("WindowTop"),
+        };
+    }
 }
 
 public enum IntervalUnit { Milliseconds, Seconds, Minutes, Hours }
@@ -65,6 +119,52 @@ public sealed class ProfileData
     public int JitterPercent { get; set; }
     public int StartDelaySeconds { get; set; }
     public bool LockToWindow { get; set; }
+
+    internal Dictionary<string, object?> ToJson() => new()
+    {
+        ["Interval"] = Interval,
+        ["Unit"] = Unit,
+        ["Button"] = Button,
+        ["Kind"] = Kind,
+        ["HoldMs"] = HoldMs,
+        ["Repeat"] = Repeat,
+        ["RepeatCount"] = RepeatCount,
+        ["DurationSeconds"] = DurationSeconds,
+        ["Position"] = Position,
+        ["X"] = X,
+        ["Y"] = Y,
+        ["OffsetPx"] = OffsetPx,
+        ["Points"] = Points.Select(p => (object?)p.ToJson()).ToList(),
+        ["Speed"] = Speed,
+        ["JitterPercent"] = JitterPercent,
+        ["StartDelaySeconds"] = StartDelaySeconds,
+        ["LockToWindow"] = LockToWindow,
+    };
+
+    internal static ProfileData FromJson(JsonObj j)
+    {
+        var d = new ProfileData();
+        return new ProfileData
+        {
+            Interval = j.Long("Interval", d.Interval),
+            Unit = j.Enum("Unit", d.Unit),
+            Button = j.Enum("Button", d.Button),
+            Kind = j.Enum("Kind", d.Kind),
+            HoldMs = j.Int("HoldMs", d.HoldMs),
+            Repeat = j.Enum("Repeat", d.Repeat),
+            RepeatCount = j.Int("RepeatCount", d.RepeatCount),
+            DurationSeconds = j.Int("DurationSeconds", d.DurationSeconds),
+            Position = j.Enum("Position", d.Position),
+            X = j.Int("X", 0),
+            Y = j.Int("Y", 0),
+            OffsetPx = j.Int("OffsetPx", 0),
+            Points = j.Array("Points").Select(PointData.FromJson).ToList(),
+            Speed = j.Num("Speed", d.Speed),
+            JitterPercent = j.Int("JitterPercent", 0),
+            StartDelaySeconds = j.Int("StartDelaySeconds", 0),
+            LockToWindow = j.Bool("LockToWindow", false),
+        };
+    }
 }
 
 public sealed class PointData
@@ -75,4 +175,24 @@ public sealed class PointData
     public ClickKind? Kind { get; set; }
     public int? DelayMs { get; set; }
     public int? HoldMs { get; set; }
+
+    internal Dictionary<string, object?> ToJson() => new()
+    {
+        ["X"] = X,
+        ["Y"] = Y,
+        ["Button"] = Button,
+        ["Kind"] = Kind,
+        ["DelayMs"] = DelayMs,
+        ["HoldMs"] = HoldMs,
+    };
+
+    internal static PointData FromJson(JsonObj j) => new()
+    {
+        X = j.Int("X", 0),
+        Y = j.Int("Y", 0),
+        Button = j.EnumOrNull<MouseButtonKind>("Button"),
+        Kind = j.EnumOrNull<ClickKind>("Kind"),
+        DelayMs = j.IntOrNull("DelayMs"),
+        HoldMs = j.IntOrNull("HoldMs"),
+    };
 }

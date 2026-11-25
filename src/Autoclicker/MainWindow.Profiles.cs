@@ -218,7 +218,7 @@ public partial class MainWindow
     {
         var menu = new ContextMenu { PlacementTarget = ProfileButton, Placement = PlacementMode.Bottom };
 
-        foreach (string name in _data.Profiles.Keys.Order(StringComparer.CurrentCultureIgnoreCase))
+        foreach (string name in _data.Profiles.Keys.OrderBy(n => n, StringComparer.CurrentCultureIgnoreCase))
         {
             var item = new MenuItem { Header = name, Icon = name == _data.CurrentProfile ? "" : null };
             item.Click += (_, _) => SwitchProfile(name);
@@ -291,7 +291,7 @@ public partial class MainWindow
 
         StartButton.IsChecked = false;
         _data.Profiles.Remove(current);
-        _data.CurrentProfile = _data.Profiles.Keys.Order(StringComparer.CurrentCultureIgnoreCase).First();
+        _data.CurrentProfile = _data.Profiles.Keys.OrderBy(n => n, StringComparer.CurrentCultureIgnoreCase).First();
         ApplyProfile(CurrentProfileData);
         SaveNow();
         RefreshProfileUi();

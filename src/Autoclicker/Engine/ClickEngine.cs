@@ -27,7 +27,7 @@ public sealed class ClickEngine : IDisposable
     public bool IsPaused => _paused;
 
     /// <summary>true si aún no hay ventana fijada (se espera a que se active una que no sea esta app).</summary>
-    public bool IsWaitingForWindow => _paused && Volatile.Read(ref _lockedWindow) == 0;
+    public bool IsWaitingForWindow => _paused && Volatile.Read(ref _lockedWindow) == IntPtr.Zero;
 
     /// <summary>Margen final que se apura girando en vez de durmiendo.</summary>
     public double SpinMarginMs { get; set; } = 0.25;
@@ -42,7 +42,7 @@ public sealed class ClickEngine : IDisposable
 
     /// <summary>
     /// Se lanza desde el hilo del motor al terminar. Los manejadores de UI deben usar
-    /// Dispatcher.BeginInvoke (nunca Invoke) para no bloquearse con Stop().
+    /// Dispatcher.InvokeAsync (nunca Invoke) para no bloquearse con Stop().
     /// </summary>
     public event Action<StopReason>? Stopped;
 
@@ -90,7 +90,7 @@ public sealed class ClickEngine : IDisposable
 
             long freq = Stopwatch.Frequency;
             double period = Math.Max(s.Interval.TotalSeconds, 0.001) * freq;
-            double jitter = Math.Clamp(s.JitterPercent, 0, 90) / 100.0;
+            double jitter = Compat.Clamp(s.JitterPercent, 0, 90) / 100.0;
             long spinTicks = (long)(SpinMarginMs * freq / 1000.0);
             var random = new Random();
 
@@ -175,7 +175,7 @@ public sealed class ClickEngine : IDisposable
     {
         if (s.Points is not { Count: > 0 } points) return [s];
 
-        double speed = Math.Clamp(s.Speed, 0.1, 10);
+        double speed = Compat.Clamp(s.Speed, 0.1, 10);
         return points.Select(p => s with
         {
             UseFixedPosition = true,

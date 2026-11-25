@@ -13,7 +13,7 @@ namespace Autoclicker.Interop;
 internal static class WindowBackdrop
 {
     /// <summary>DWMWA_SYSTEMBACKDROP_TYPE existe desde Windows 11 22H2 (build 22621).</summary>
-    public static bool MicaSupported { get; } = OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621);
+    public static bool MicaSupported { get; } = Environment.OSVersion.Version.Major >= 10 && Environment.OSVersion.Version.Build >= 22621;
 
     public static void Attach(Window window)
     {

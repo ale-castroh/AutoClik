@@ -37,7 +37,7 @@ public partial class RecordingBar : Window
 
     private void Refresh()
     {
-        TimeSpan t = Stopwatch.GetElapsedTime(_started);
+        TimeSpan t = Compat.Elapsed(_started);
         InfoText.Text = $"{_count} {Strings.Clicks(_count)} · {(int)t.TotalMinutes}:{t.Seconds:00}";
     }
 

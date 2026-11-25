@@ -44,9 +44,9 @@ public static unsafe class ClickRecorder
     {
         if (_hook != 0) return;
         _presses.Clear();
-        Array.Clear(_open);
+        Array.Clear(_open, 0, _open.Length);
         _dispatcher = Dispatcher.CurrentDispatcher;
-        _hook = SetWindowsHookExW(WH_MOUSE_LL, &HookProc, GetModuleHandleW(0), 0);
+        _hook = SetWindowsHookExW(WH_MOUSE_LL, Proc, GetModuleHandleW(0), 0);
     }
 
     /// <summary>Termina y convierte la grabación en puntos con sus esperas reales.</summary>
@@ -79,7 +79,9 @@ public static unsafe class ClickRecorder
         return points;
     }
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    // Referencia estática: si el recolector liberase el delegado, Windows llamaría a memoria inválida.
+    private static readonly LowLevelHookProc Proc = HookProc;
+
     private static nint HookProc(int code, nint wParam, nint lParam)
     {
         if (code >= 0)
@@ -110,7 +112,7 @@ public static unsafe class ClickRecorder
         if (hwnd != 0)
         {
             GetWindowThreadProcessId(GetAncestor(hwnd, GA_ROOT), out uint pid);
-            if (pid == (uint)Environment.ProcessId) return;
+            if (pid == (uint)Compat.ProcessId) return;
         }
 
         var press = new Press { Button = button, X = pt.X, Y = pt.Y, Down = now };
@@ -124,6 +126,6 @@ public static unsafe class ClickRecorder
         if (press == null) return;
         press.Up = now;
         _open[(int)button] = null;
-        _dispatcher?.BeginInvoke(() => ClickRecorded?.Invoke());
+        _dispatcher?.InvokeAsync(() => ClickRecorded?.Invoke());
     }
 }

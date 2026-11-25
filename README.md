@@ -1,13 +1,14 @@
-# Autoclicker
+# AutoClik
 
-Autoclicker para Windows 10/11: minimalista, preciso (error medio ≈ 0,1 ms, hasta 1000 clics/s)
+Autoclicker para Windows 10/11: ligero (un solo .exe de ~200 KB), minimalista, preciso (error medio ≈ 0,1 ms, hasta 1000 clics/s)
 y con tema claro/oscuro que sigue al de Windows. Idioma automático: español si Windows está en
 español; inglés en cualquier otro idioma.
 
 ## Uso rápido
 
-1. Abre `Autoclicker.exe` (no necesita instalación ni .NET). La primera vez tarda unos segundos
-   más porque se descomprime una sola vez; después abre en menos de un segundo.
+1. Abre `AutoClik.exe`. No necesita instalación: usa .NET Framework 4.8, que ya viene con
+   Windows 10 (1903 o posterior) y Windows 11. Abre en medio segundo. Si lo abres otra vez,
+   no se duplica: aparece delante la ventana que ya estaba abierta (también desde la bandeja).
 2. Elige **Intervalo**, **Botón**, **Tipo** y **Repetir**.
 3. Pulsa **Iniciar** o **F6**. Vuelve a pulsar **F6** para parar.
 
@@ -43,8 +44,9 @@ a donde quieras y volver para pulsar **Detener**.
 
 ### Dónde se guarda
 
-Todo se guarda solo en `%AppData%\Autoclicker\settings.json` (perfiles, puntos, atajo, posición
-de la ventana). Para empezar de cero, borra ese archivo con la app cerrada.
+Todo se guarda solo en `%AppData%\AutoClik\settings.json` (perfiles, puntos, atajo, posición
+de la ventana). Para empezar de cero, borra ese archivo con la app cerrada. Los ajustes de versiones
+anteriores (`%AppData%\Autoclicker`) se importan solos la primera vez.
 
 ### Si Windows lo bloquea
 
@@ -55,16 +57,16 @@ de código.
 
 ## Compilar
 
-Requisitos: SDK de .NET 11.
+Requisitos: SDK de .NET (para compilar; el resultado se ejecuta con .NET Framework 4.8).
 
 ```powershell
 dotnet run --project src\Autoclicker          # ejecutar en desarrollo
-powershell -File build.ps1                    # genera dist\Autoclicker.exe (autónomo)
-powershell -NoProfile -File tests\run-all.ps1 # batería de pruebas (mueve el ratón ~40 s)
+powershell -File build.ps1                    # genera dist\AutoClik.exe (~200 KB)
+powershell -NoProfile -File tests\run-all.ps1 # batería de pruebas (mueve el ratón ~1,5 min)
 ```
 
 Opciones de línea de comandos (pruebas): `--theme=light|dark`, `--lang=es|en`, `--data=<carpeta>`.
-Antes de `run-all.ps1`, cierra cualquier Autoclicker abierto (las pruebas pulsan F6).
+Antes de `run-all.ps1`, cierra cualquier AutoClik abierto (las pruebas pulsan F6).
 
 Los textos de la interfaz están en `src/Autoclicker/Localization/Strings.cs` (español e inglés).
 

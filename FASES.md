@@ -102,6 +102,18 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 1.2.0 — AutoClik ligero ✅
+- Pasa a **.NET Framework 4.8** (incluido en Windows 10 1903+ y 11): `dist\AutoClik.exe` de **~195 KB**
+  (antes 61 MB), abre en ~0,5 s siempre (antes ~4 s la primera vez). Memoria física ~80 MB visible
+  (antes ~105) y **~10 MB en la bandeja** (antes ~26). La memoria privada sube algo (~66 MB frente a ~50).
+- Cambios del port: `DllImport` en lugar de `LibraryImport`, hooks con delegados, `Compat.cs`
+  (Clamp, IsDigit, tiempos), JSON propio (`Persistence/MiniJson.cs`) que lee también el formato anterior.
+- Nombre **AutoClik** (ejecutable, ventana, bandeja). Ajustes en `%AppData%\AutoClik`; los de
+  `%AppData%\Autoclicker` se importan solos.
+- **Una sola copia**: abrir el .exe otra vez trae al frente la ventana existente, también desde la
+  bandeja (`SingleInstance.cs`). Las copias con `--data` usan otro nombre y no interfieren.
+- Pruebas: batería completa pasa (+ nueva `tests/ui/instancia.ps1`).
+
 ## Versión 1.1.0 — Idioma automático ✅
 Español si Windows está en español, inglés en cualquier otro idioma (`Localization/Strings.cs`,
 `{l:T Clave}` en XAML). Forzable con `--lang=es|en` o `AUTOCLICKER_LANG`. El perfil inicial se

@@ -9,17 +9,17 @@ internal static unsafe partial class EngineNative
     public const uint CREATE_WAITABLE_TIMER_HIGH_RESOLUTION = 0x00000002;
     public const uint TIMER_ALL_ACCESS = 0x001F0003;
 
-    [LibraryImport("kernel32.dll", SetLastError = true)]
-    public static partial nint CreateWaitableTimerExW(nint attributes, nint name, uint flags, uint access);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern nint CreateWaitableTimerExW(nint attributes, nint name, uint flags, uint access);
 
-    [LibraryImport("kernel32.dll", SetLastError = true)]
-    public static partial int SetWaitableTimer(nint timer, in long dueTime, int period, nint completion, nint arg, int resume);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern int SetWaitableTimer(nint timer, ref long dueTime, int period, nint completion, nint arg, int resume);
 
-    [LibraryImport("winmm.dll")]
-    public static partial uint timeBeginPeriod(uint ms);
+    [DllImport("winmm.dll")]
+    public static extern uint timeBeginPeriod(uint ms);
 
-    [LibraryImport("winmm.dll")]
-    public static partial uint timeEndPeriod(uint ms);
+    [DllImport("winmm.dll")]
+    public static extern uint timeEndPeriod(uint ms);
 
     // ---- Ratón ----
     public const uint INPUT_MOUSE = 0;
@@ -59,30 +59,30 @@ internal static unsafe partial class EngineNative
         public MOUSEINPUT mi;
     }
 
-    [LibraryImport("user32.dll", SetLastError = true)]
-    public static partial uint SendInput(uint count, INPUT* inputs, int size);
+    [DllImport("user32.dll", SetLastError = true)]
+    public static extern uint SendInput(uint count, INPUT* inputs, int size);
 
-    [LibraryImport("user32.dll")]
-    public static partial int GetCursorPos(out POINT point);
+    [DllImport("user32.dll")]
+    public static extern int GetCursorPos(out POINT point);
 
-    [LibraryImport("user32.dll")]
-    public static partial nint WindowFromPoint(POINT point);
+    [DllImport("user32.dll")]
+    public static extern nint WindowFromPoint(POINT point);
 
-    [LibraryImport("user32.dll")]
-    public static partial nint GetAncestor(nint hwnd, uint flags);
+    [DllImport("user32.dll")]
+    public static extern nint GetAncestor(nint hwnd, uint flags);
 
-    [LibraryImport("user32.dll")]
-    public static partial uint GetWindowThreadProcessId(nint hwnd, out uint processId);
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(nint hwnd, out uint processId);
 
-    [LibraryImport("user32.dll")]
-    public static partial int GetSystemMetrics(int index);
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int index);
 
-    [LibraryImport("user32.dll")]
-    public static partial nint GetForegroundWindow();
+    [DllImport("user32.dll")]
+    public static extern nint GetForegroundWindow();
 
     public const int GWL_EXSTYLE = -20;
     public const long WS_EX_TRANSPARENT = 0x00000020;
 
-    [LibraryImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
-    public static partial nint GetWindowLongPtr(nint hwnd, int index);
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    public static extern nint GetWindowLongPtr(nint hwnd, int index);
 }

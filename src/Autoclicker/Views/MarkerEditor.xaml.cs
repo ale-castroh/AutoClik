@@ -49,7 +49,7 @@ public partial class MarkerEditor : Window
         }).IsChecked = true;
 
         DelayBox.Text = point.DelayMs?.ToString() ?? "";
-        DelayBox.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(char.IsAsciiDigit);
+        DelayBox.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(Compat.IsDigit);
 
         foreach (var radio in new[] { ButtonGeneral, ButtonLeft, ButtonRight, ButtonMiddle, KindGeneral, KindSingle, KindDouble, KindHold })
             radio.Checked += (_, _) => Save();
@@ -87,7 +87,7 @@ public partial class MarkerEditor : Window
 
         int x = m.Right;
         if (x + w > right) x = m.Left - w;
-        int y = Math.Clamp(m.Top - 20, top, Math.Max(top, bottom - h));
+        int y = Compat.Clamp(m.Top - 20, top, Math.Max(top, bottom - h));
         SetWindowPos(hwnd, 0, Math.Max(x, left), y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
         Activate();
     }

@@ -33,7 +33,7 @@ internal sealed class HighResTimer : WaitHandle
     public void Arm(long hundredNs)
     {
         long due = -Math.Max(hundredNs, 1); // negativo = relativo
-        SetWaitableTimer(SafeWaitHandle.DangerousGetHandle(), in due, 0, 0, 0, 0);
+        SetWaitableTimer(SafeWaitHandle.DangerousGetHandle(), ref due, 0, 0, 0, 0);
     }
 
     protected override void Dispose(bool explicitDisposing)

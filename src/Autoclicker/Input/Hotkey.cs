@@ -57,7 +57,7 @@ public readonly record struct Hotkey(int VirtualKey, uint Modifiers)
         if (len > 0)
         {
             string name = new(buffer, 0, len);
-            return name.Length == 1 ? name.ToUpperInvariant() : char.ToUpper(name[0]) + name[1..].ToLowerInvariant();
+            return name.Length == 1 ? name.ToUpperInvariant() : char.ToUpper(name[0]) + name.Substring(1).ToLowerInvariant();
         }
         return Strings.F("KeyHex", vk);
     }

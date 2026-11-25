@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <Compile Include="..\..\src\Autoclicker\Engine\*.cs" Link="Engine\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\Autoclicker\Compat.cs" Link="Compat.cs" />
   </ItemGroup>
 
 </Project>

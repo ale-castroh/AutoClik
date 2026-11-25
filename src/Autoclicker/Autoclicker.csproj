@@ -1,41 +1,38 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <!--
+    AutoClik sobre .NET Framework 4.8, que ya viene con Windows 10 (1903+) y Windows 11:
+    el .exe no tiene que llevar .NET dentro, así que pesa < 1 MB y abre al instante.
+  -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net11.0-windows</TargetFramework>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <SatelliteResourceLanguages>es</SatelliteResourceLanguages>
-    <Product>Autoclicker</Product>
-    <Version>1.1.0</Version>
-    <Copyright>© 2026</Copyright>
 
-    <!-- Ligereza: GC de estación sin hilo concurrente (menos memoria reservada) -->
-    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
-    <TieredPGO>true</TieredPGO>
+    <!-- Nombre del ejecutable y de la app (el código sigue en el espacio de nombres Autoclicker) -->
+    <AssemblyName>AutoClik</AssemblyName>
+    <RootNamespace>Autoclicker</RootNamespace>
+    <Product>AutoClik</Product>
+    <AssemblyTitle>AutoClik</AssemblyTitle>
+    <Version>1.2.0</Version>
+    <Copyright>© 2026 ale-castroh</Copyright>
+
+    <!-- 64 bits en Windows x64 y nativo en ARM64 -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <SatelliteResourceLanguages>es</SatelliteResourceLanguages>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <!--
-    Publicación (build.ps1): un único .exe autónomo (incluye .NET; no hay que instalar nada).
-    - IncludeAllContentForSelfExtract: WPF tiene un componente mixto (DirectWriteForwarder.dll) que no
-      se puede cargar desde dentro del paquete; el .exe se descomprime una vez en una caché y listo.
-    - Sin ReadyToRun: el Control inteligente de aplicaciones de Windows bloquea las DLL sin firmar
-      con código nativo precompilado. Sin él, la app arranca igual de rápido tras la primera vez.
-  -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <DebugType>none</DebugType>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
-    <PublishSingleFile>true</PublishSingleFile>
-    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <PublishReadyToRun>false</PublishReadyToRun>
-    <!-- El modo de extracción "heredado" es intencionado (ver arriba) -->
-    <NoWarn>$(NoWarn);NETSDK1244</NoWarn>
+    <Optimize>true</Optimize>
   </PropertyGroup>
 
 </Project>

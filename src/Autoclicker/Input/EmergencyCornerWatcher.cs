@@ -29,7 +29,7 @@ public static unsafe class EmergencyCornerWatcher
         if (_hook != 0) return;
         _fired = false;
         _dispatcher = Dispatcher.CurrentDispatcher;
-        _hook = SetWindowsHookExW(WH_MOUSE_LL, &HookProc, GetModuleHandleW(0), 0);
+        _hook = SetWindowsHookExW(WH_MOUSE_LL, Proc, GetModuleHandleW(0), 0);
     }
 
     public static void Stop()
@@ -39,7 +39,9 @@ public static unsafe class EmergencyCornerWatcher
         _hook = 0;
     }
 
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    // Referencia estática: si el recolector liberase el delegado, Windows llamaría a memoria inválida.
+    private static readonly LowLevelHookProc Proc = HookProc;
+
     private static nint HookProc(int code, nint wParam, nint lParam)
     {
         if (code >= 0 && wParam == WM_MOUSEMOVE && !_fired)
@@ -49,7 +51,7 @@ public static unsafe class EmergencyCornerWatcher
             {
                 _fired = true;
                 // Fuera del hook: los hooks de bajo nivel deben volver enseguida.
-                _dispatcher?.BeginInvoke(() => Triggered?.Invoke());
+                _dispatcher?.InvokeAsync(() => Triggered?.Invoke());
             }
         }
         return CallNextHookEx(0, code, wParam, lParam);

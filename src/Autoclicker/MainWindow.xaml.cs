@@ -44,7 +44,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         ThemeManager.ThemeChanged += OnThemeChanged;
 
-        _engine.Stopped += reason => Dispatcher.BeginInvoke(() => OnEngineStopped(reason));
+        _engine.Stopped += reason => Dispatcher.InvokeAsync(() => OnEngineStopped(reason));
         _markers.Changed += UpdatePointsSummary;
 
         // La UI se refresca 10 veces por segundo, no en cada clic: no frena al motor.
@@ -60,7 +60,7 @@ public partial class MainWindow : Window
 
         foreach (TextBox box in NumberBoxes())
         {
-            box.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(char.IsAsciiDigit);
+            box.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(Compat.IsDigit);
             DataObject.AddPastingHandler(box, OnNumberPaste);
             box.GotKeyboardFocus += (_, _) => box.SelectAll();
             box.LostKeyboardFocus += (_, _) => { if (box.Text.Length == 0) box.Text = "0"; };
@@ -203,11 +203,11 @@ public partial class MainWindow : Window
     {
         if (_themeRefreshQueued) return;
         _themeRefreshQueued = true;
-        Dispatcher.BeginInvoke(DispatcherPriority.Background, () =>
+        Dispatcher.InvokeAsync(() =>
         {
             _themeRefreshQueued = false;
             ThemeManager.Apply();
-        });
+        }, DispatcherPriority.Background);
     }
 
     private void OnThemeChanged()
@@ -241,12 +241,12 @@ public partial class MainWindow : Window
         // En la bandeja la app apenas hace nada: devolver al sistema la memoria que no usa.
         // Si está clicando no se toca nada para no meter pausas en el motor.
         if (StartButton.IsChecked != true && !_recording)
-            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, TrimMemory);
+            Dispatcher.InvokeAsync(TrimMemory, DispatcherPriority.ApplicationIdle);
     }
 
     private static void TrimMemory()
     {
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
         GC.WaitForPendingFinalizers();
         SetProcessWorkingSetSize(System.Diagnostics.Process.GetCurrentProcess().Handle, -1, -1);
     }
@@ -255,6 +255,23 @@ public partial class MainWindow : Window
     {
         Show();
         WindowState = WindowState.Normal;
+        Activate();
+    }
+
+    /// <summary>
+    /// Otra copia de AutoClik pidió mostrarse: aparecer (aunque esté en la bandeja) y ponerse
+    /// delante de todas las ventanas. No se hace nada mientras se graba o hay un selector abierto.
+    /// </summary>
+    public void BringToFront()
+    {
+        if (_recording || !IsEnabled) return;
+
+        ShowFromTray();
+        // Subir encima de todo y, si no está fijada, volver a ser una ventana normal.
+        SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        if (PinButton.IsChecked != true)
+            SetWindowPos(_hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+        SetForegroundWindow(_hwnd);
         Activate();
     }
 
@@ -297,14 +314,14 @@ public partial class MainWindow : Window
 
         if (_recording)
         {
-            Dispatcher.BeginInvoke(() => StartButton.IsChecked = false);
+            Dispatcher.InvokeAsync(() => StartButton.IsChecked = false);
             return;
         }
 
         if (PointsPositionRadio.IsChecked == true && _markers.Count == 0)
         {
             _notice = Strings.T("NeedPoint");
-            Dispatcher.BeginInvoke(() => StartButton.IsChecked = false);
+            Dispatcher.InvokeAsync(() => StartButton.IsChecked = false);
             return;
         }
 
@@ -371,7 +388,7 @@ public partial class MainWindow : Window
                  : HoldKindRadio.IsChecked == true ? ClickKind.Hold
                  : ClickKind.Single,
             HoldDuration = TimeSpan.FromMilliseconds(Math.Max(Number(HoldBox), 1)),
-            RepeatCount = RepeatCountRadio.IsChecked == true ? (int)Math.Clamp(Number(RepeatCountBox), 1, int.MaxValue) : 0,
+            RepeatCount = RepeatCountRadio.IsChecked == true ? (int)Compat.Clamp(Number(RepeatCountBox), 1, int.MaxValue) : 0,
             TimeLimit = RepeatTimeRadio.IsChecked == true ? TimeSpan.FromSeconds(Math.Max(Number(DurationBox), 1)) : TimeSpan.Zero,
             StartDelay = TimeSpan.FromSeconds(Number(DelayBox)),
             UseFixedPosition = FixedPositionRadio.IsChecked == true,
@@ -395,17 +412,17 @@ public partial class MainWindow : Window
         if (running)
         {
             _rateSamples.Enqueue((now, count));
-            while (_rateSamples.Count > 1 && Stopwatch.GetElapsedTime(_rateSamples.Peek().Time, now).TotalSeconds > 1.0)
+            while (_rateSamples.Count > 1 && Compat.Elapsed(_rateSamples.Peek().Time, now).TotalSeconds > 1.0)
                 _rateSamples.Dequeue();
             var oldest = _rateSamples.Peek();
-            double span = Stopwatch.GetElapsedTime(oldest.Time, now).TotalSeconds;
+            double span = Compat.Elapsed(oldest.Time, now).TotalSeconds;
             if (span > 0.2) rate = (count - oldest.Count) / span;
         }
 
         CountText.Text = count.ToString("N0");
         RateText.Text = Strings.F("Rate", Strings.Clicks(count), rate);
 
-        double waitLeft = (_runDelay - Stopwatch.GetElapsedTime(_runStarted, now)).TotalSeconds;
+        double waitLeft = (_runDelay - Compat.Elapsed(_runStarted, now)).TotalSeconds;
         StatusText.Text = running
             ? waitLeft > 0 ? Strings.F("StartsIn", waitLeft)
               : _engine.IsWaitingForWindow ? Strings.T("WaitingWindow")
@@ -666,7 +683,7 @@ public partial class MainWindow : Window
 
     private static void OnNumberPaste(object sender, DataObjectPastingEventArgs e)
     {
-        if (e.DataObject.GetData(DataFormats.UnicodeText) is not string text || !text.All(char.IsAsciiDigit))
+        if (e.DataObject.GetData(DataFormats.UnicodeText) is not string text || !text.All(Compat.IsDigit))
             e.CancelCommand();
     }
 }

@@ -15,7 +15,7 @@ public static class Strings
     private static bool DetectSpanish()
     {
         string? forced = Environment.GetCommandLineArgs()
-            .FirstOrDefault(a => a.StartsWith("--lang=", StringComparison.OrdinalIgnoreCase))?["--lang=".Length..]
+            .FirstOrDefault(a => a.StartsWith("--lang=", StringComparison.OrdinalIgnoreCase))?.Substring("--lang=".Length)
             ?? Environment.GetEnvironmentVariable("AUTOCLICKER_LANG");
         if (!string.IsNullOrWhiteSpace(forced))
             return forced.Trim().StartsWith("es", StringComparison.OrdinalIgnoreCase);
@@ -46,8 +46,8 @@ public static class Strings
         ["TrayStop"] = ("Detener", "Stop"),
         ["TrayShow"] = ("Mostrar ventana", "Show window"),
         ["TrayExit"] = ("Salir", "Exit"),
-        ["TrayRunning"] = ("Autoclicker · Clicando", "Autoclicker · Clicking"),
-        ["TrayStopped"] = ("Autoclicker · Detenido", "Autoclicker · Stopped"),
+        ["TrayRunning"] = ("AutoClik · Clicando", "AutoClik · Clicking"),
+        ["TrayStopped"] = ("AutoClik · Detenido", "AutoClik · Stopped"),
 
         // ---- Botón principal y estado ----
         ["StartBtn"] = ("Iniciar", "Start"),

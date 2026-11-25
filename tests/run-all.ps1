@@ -1,25 +1,25 @@
-﻿# Batería completa de pruebas del Autoclicker.
-#   powershell -NoProfile -File tests\run-all.ps1                 (prueba dist\Autoclicker.exe)
+﻿# Batería completa de pruebas de AutoClik.
+#   powershell -NoProfile -File tests\run-all.ps1                 (prueba dist\AutoClik.exe)
 #   powershell -NoProfile -File tests\run-all.ps1 -App <ruta.exe>
 #
 # AVISO: durante ~1 minuto mueve el ratón y hace clics reales sobre una ventana de prueba
 # (cuadrado morado en la esquina superior izquierda). No uses el PC mientras se ejecuta.
 # Nunca toca tu configuración: usa %TEMP%\autoclicker-tests.
-param([string]$App = (Join-Path $PSScriptRoot '..\dist\Autoclicker.exe'))
+param([string]$App = (Join-Path $PSScriptRoot '..\dist\AutoClik.exe'))
 
 $ErrorActionPreference = 'Stop'
 $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
 $App = (Resolve-Path $App).Path
 
-# Las pruebas pulsan F6: con otro Autoclicker abierto, ese empezaría a clicar donde esté el ratón.
-if (Get-Process Autoclicker -ErrorAction SilentlyContinue) {
-    Write-Host "Cierra todos los Autoclicker abiertos (también el de la bandeja) antes de ejecutar las pruebas." -ForegroundColor Yellow
+# Las pruebas pulsan F6: con otro AutoClik abierto, ese empezaría a clicar donde esté el ratón.
+if (Get-Process AutoClik, Autoclicker -ErrorAction SilentlyContinue) {
+    Write-Host "Cierra todos los AutoClik abiertos (también el de la bandeja) antes de ejecutar las pruebas." -ForegroundColor Yellow
     exit 1
 }
 $startedAt = Get-Date
 # Solo se cierran los procesos que hayan arrancado las propias pruebas.
 function Stop-TestProcesses {
-    Get-Process Autoclicker, Autoclicker.Bench -ErrorAction SilentlyContinue |
+    Get-Process AutoClik, Autoclicker.Bench -ErrorAction SilentlyContinue |
         Where-Object { $_.StartTime -ge $startedAt } | Stop-Process -Force
 }
 # Las pruebas buscan botones por su texto en español: forzar el idioma de la app.
@@ -42,7 +42,8 @@ $ui = @(
     @{ Name = 'Multi-punto'; File = 'puntos.ps1' },
     @{ Name = 'Guardado y perfiles'; File = 'perfiles.ps1' },
     @{ Name = 'Pausar si cambia la ventana'; File = 'ventana.ps1' },
-    @{ Name = 'Grabadora'; File = 'grabadora.ps1' }
+    @{ Name = 'Grabadora'; File = 'grabadora.ps1' },
+    @{ Name = 'Una sola copia abierta'; File = 'instancia.ps1' }
 )
 foreach ($t in $ui) {
     Write-Host "`n== $($t.Name)" -ForegroundColor Cyan

@@ -11,7 +11,7 @@ internal static unsafe class MouseInput
     /// </summary>
     public const nint Signature = 0x41434C4B; // "ACLK"
 
-    private static readonly uint OwnProcessId = (uint)Environment.ProcessId;
+    private static readonly uint OwnProcessId = (uint)Compat.ProcessId;
 
     /// <summary>
     /// Calcula dónde clicar (cursor, o punto fijo con desvío aleatorio).
