@@ -343,6 +343,10 @@ public partial class MainWindow
         var delete = MenuAction(Strings.T("DeleteProfile"), "", DeleteProfile);
         delete.IsEnabled = _data.Profiles.Count > 1;
         menu.Items.Add(delete);
+        menu.Items.Add(new Separator());
+        menu.Items.Add(MenuAction(Strings.T("ProfileExport"), "", ExportProfile));
+        menu.Items.Add(MenuAction(Strings.T("ProfileImport"), "", ImportProfile));
+        menu.Items.Add(MenuAction(Strings.T("ProfileShortcut"), "", ProfileShortcut));
 
         menu.IsOpen = true;
     }
@@ -407,6 +411,100 @@ public partial class MainWindow
         ApplyProfile(CurrentProfileData);
         SaveNow();
         RefreshProfileUi();
+    }
+
+    // ================= Exportar / importar perfiles (2.6) =================
+
+    private const string ProfileExtension = ".autoclik-profile";
+
+    private void ExportProfile_Click(object sender, RoutedEventArgs e) => ExportProfile();
+
+    private void ImportProfile_Click(object sender, RoutedEventArgs e) => ImportProfile();
+
+    /// <summary>Guarda el perfil actual en un archivo, con las imágenes de sus reglas de Vigilar dentro.</summary>
+    private void ExportProfile()
+    {
+        SaveNow();
+        string name = _data.CurrentProfile;
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            FileName = new string(name.Select(c => System.IO.Path.GetInvalidFileNameChars().Contains(c) ? '_' : c).ToArray()),
+            DefaultExt = ProfileExtension,
+            Filter = Strings.T("ProfileFileFilter"),
+        };
+        if (dialog.ShowDialog(this) != true) return;
+
+        ProfileData profile = CurrentProfileData;
+        var images = new Dictionary<string, object?>();
+        foreach (string image in profile.WatchRules.Select(r => r.Image).OfType<string>().Distinct())
+        {
+            string path = Watch.WatchImages.PathOf(image);
+            if (File.Exists(path)) images[image] = Convert.ToBase64String(File.ReadAllBytes(path));
+        }
+        var json = new Dictionary<string, object?>
+        {
+            ["Format"] = "AutoClik profile",
+            ["Version"] = 1,
+            ["Name"] = name,
+            ["Profile"] = profile.ToJson(),
+            ["Images"] = images,
+        };
+        try
+        {
+            File.WriteAllText(dialog.FileName, MiniJson.Serialize(json), new System.Text.UTF8Encoding(false));
+            _notice = Strings.T("ProfileExported");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ErrorLog.Write("exportar perfil", ex);
+            _notice = Strings.T("ProfileFileError");
+        }
+        UpdateStatus();
+    }
+
+    /// <summary>Añade un perfil desde un archivo (con otro nombre si ya existe) y pasa a él.</summary>
+    private void ImportProfile()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = Strings.T("ProfileFileFilter") };
+        if (dialog.ShowDialog(this) != true) return;
+        try
+        {
+            var j = JsonObj.From(MiniJson.Parse(File.ReadAllText(dialog.FileName, System.Text.Encoding.UTF8)));
+            if (j.Str("Format") != "AutoClik profile") throw new FormatException("No es un perfil de AutoClik");
+            ProfileData profile = ProfileData.FromJson(j.Obj("Profile"));
+            foreach (var kv in j.Obj("Images").Entries)
+            {
+                // Solo nombres de archivo simples: nada de rutas que salgan de la carpeta de imágenes
+                if (kv.Value is not string data || kv.Key != System.IO.Path.GetFileName(kv.Key) || !kv.Key.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                string path = Watch.WatchImages.PathOf(kv.Key);
+                if (File.Exists(path)) continue;
+                Directory.CreateDirectory(Watch.WatchImages.Folder);
+                File.WriteAllBytes(path, Convert.FromBase64String(data));
+            }
+
+            string wanted = (j.Str("Name") ?? "").Trim();
+            if (wanted.Length == 0) wanted = System.IO.Path.GetFileNameWithoutExtension(dialog.FileName);
+            if (wanted.Length > 40) wanted = wanted.Substring(0, 40);
+            string name = wanted;
+            for (int i = 2; ValidateNew(name) != null; i++) name = $"{wanted} ({i})";
+
+            StartButton.IsChecked = false;
+            SaveNow();
+            _data.Profiles[name] = profile;
+            _data.CurrentProfile = name;
+            ApplyProfile(profile);
+            SaveNow();
+            RefreshProfileUi();
+            _notice = Strings.F("ProfileImported", name);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException
+                                       or InvalidCastException or OverflowException or ArgumentException)
+        {
+            ErrorLog.Write("importar perfil", ex);
+            _notice = Strings.T("ProfileFileError");
+        }
+        UpdateStatus();
     }
 
     private string? ValidateNew(string name) =>

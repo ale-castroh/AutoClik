@@ -414,6 +414,7 @@
                     <TextBlock x:Name="MacroTimeText" Text="00:00" Margin="-2,6,0,0" FontFamily="{StaticResource NumberFont}"
                                FontSize="52" LineStackingStrategy="BlockLineHeight" LineHeight="48" />
                     <TextBlock x:Name="MacroDetailText" Text="" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionStyle}" />
+                    <TextBlock x:Name="MacroUsageText" Text="" TextTrimming="CharacterEllipsis" Style="{StaticResource CaptionStyle}" />
 
                     <!-- Progreso de la vuelta (solo al reproducir) -->
                     <Grid x:Name="MacroProgress" Height="3" Margin="0,10,0,0" Visibility="Collapsed">
@@ -803,6 +804,67 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Estadísticas (2.6): solo en este PC -->
+                <DockPanel>
+                    <Border DockPanel.Dock="Right" VerticalAlignment="Bottom" Margin="0,0,0,6" Style="{StaticResource SegmentedContainerStyle}">
+                        <UniformGrid Columns="2">
+                            <RadioButton x:Name="StatsTodayRadio" Content="{l:T StatsToday}" GroupName="StatsPeriod" Style="{StaticResource CompactSegmentStyle}"
+                                         Checked="StatsPeriod_Changed" />
+                            <RadioButton x:Name="StatsTotalRadio" Content="{l:T StatsTotal}" GroupName="StatsPeriod" IsChecked="True" Style="{StaticResource CompactSegmentStyle}"
+                                         Checked="StatsPeriod_Changed" />
+                        </UniformGrid>
+                    </Border>
+                    <TextBlock Text="{l:T Stats}" Style="{StaticResource GroupLabelStyle}" />
+                </DockPanel>
+                <Border Style="{StaticResource ListCardStyle}">
+                    <StackPanel>
+                        <Grid Margin="12,12,12,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="8" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Border Grid.Row="0" Grid.Column="0" CornerRadius="6" Padding="10,7" Background="{DynamicResource SubtleHoverBrush}">
+                                <StackPanel>
+                                    <TextBlock Text="{l:T StatClicks}" Style="{StaticResource CaptionStyle}" />
+                                    <TextBlock x:Name="StatClicksText" Text="0" FontFamily="{StaticResource NumberFont}" FontSize="20" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Row="0" Grid.Column="2" CornerRadius="6" Padding="10,7" Background="{DynamicResource SubtleHoverBrush}">
+                                <StackPanel>
+                                    <TextBlock Text="{l:T StatKeys}" Style="{StaticResource CaptionStyle}" />
+                                    <TextBlock x:Name="StatKeysText" Text="0" FontFamily="{StaticResource NumberFont}" FontSize="20" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Row="2" Grid.Column="0" CornerRadius="6" Padding="10,7" Background="{DynamicResource SubtleHoverBrush}">
+                                <StackPanel>
+                                    <TextBlock Text="{l:T StatMacros}" Style="{StaticResource CaptionStyle}" />
+                                    <TextBlock x:Name="StatMacrosText" Text="0" FontFamily="{StaticResource NumberFont}" FontSize="20" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Row="2" Grid.Column="2" CornerRadius="6" Padding="10,7" Background="{DynamicResource SubtleHoverBrush}">
+                                <StackPanel>
+                                    <TextBlock Text="{l:T StatTime}" Style="{StaticResource CaptionStyle}" />
+                                    <TextBlock x:Name="StatTimeText" Text="0 s" FontFamily="{StaticResource NumberFont}" FontSize="20" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <Button x:Name="StatsResetButton" DockPanel.Dock="Right" VerticalAlignment="Center" Style="{StaticResource SecondaryButtonStyle}"
+                                    Content="{l:T StatsReset}" Click="StatsReset_Click" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock x:Name="StatLongestText" Text="" Style="{StaticResource RowHintStyle}" />
+                                <TextBlock x:Name="StatSinceText" Text="" Style="{StaticResource RowHintStyle}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- General -->
                 <TextBlock Text="{l:T General}" Style="{StaticResource GroupLabelStyle}" />
                 <Border Style="{StaticResource ListCardStyle}">
@@ -847,6 +909,29 @@
                                       Checked="Translucent_Changed" Unchecked="Translucent_Changed" />
                             <TextBlock Text="{l:T Translucent}" Style="{StaticResource RowTitleStyle}"
                                        ToolTip="{l:T TranslucentTip}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                            <CheckBox x:Name="PortableSwitch" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                      Style="{StaticResource ToggleSwitchStyle}"
+                                      Checked="Portable_Changed" Unchecked="Portable_Changed" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{l:T Portable}" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock Text="{l:T PortableHint}" Style="{StaticResource RowHintStyle}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="ExportProfileButton" Content="{l:T Export}" Style="{StaticResource SecondaryButtonStyle}"
+                                        Click="ExportProfile_Click" ToolTip="{l:T ProfileExport}" />
+                                <Button x:Name="ImportProfileButton" Content="{l:T Import}" Margin="6,0,0,0" Style="{StaticResource SecondaryButtonStyle}"
+                                        Click="ImportProfile_Click" ToolTip="{l:T ProfileImport}" />
+                            </StackPanel>
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{l:T Profiles}" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock Text="{l:T ProfilesHint}" Style="{StaticResource RowHintStyle}" />
+                            </StackPanel>
                         </DockPanel>
                     </StackPanel>
                 </Border>

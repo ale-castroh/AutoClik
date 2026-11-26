@@ -45,6 +45,7 @@ public partial class MainWindow : Window
     private long _runStarted;
     private TimeSpan _runDelay;
     private StopReason? _lastStop;
+    private bool _clickRunCounting; // el motor arrancó de verdad: al parar se suma a las estadísticas
 
     public MainWindow()
     {
@@ -96,6 +97,7 @@ public partial class MainWindow : Window
 
         InitPersistence();
         InitMacros();
+        InitStats();
         InitWatch();
         InitSchedule();
         InitHud();
@@ -239,7 +241,8 @@ public partial class MainWindow : Window
             HideToTray();
             return;
         }
-        SaveNow();
+        // Al reiniciar por el modo portátil los datos ya se copiaron: guardar ahora volvería a crear la carpeta vieja
+        if (!_restarting) SaveNow();
         base.OnClosing(e);
     }
 
@@ -461,6 +464,8 @@ public partial class MainWindow : Window
         _runDelay = settings.StartDelay;
         _lastStop = null;
         _rateSamples.Clear();
+        _runAction = settings.Action;
+        _clickRunCounting = true;
 
         _engine.Start(settings);
         if (EmergencySwitch.IsChecked == true) EmergencyCornerWatcher.Start();
@@ -473,6 +478,11 @@ public partial class MainWindow : Window
     private void StartButton_Unchecked(object sender, RoutedEventArgs e)
     {
         _engine.Stop();
+        if (_clickRunCounting)
+        {
+            _clickRunCounting = false;
+            CountClickRun();
+        }
         EmergencyCornerWatcher.Stop();
         _markers.ClickThrough = false;
         _lastStop ??= StopReason.Requested;

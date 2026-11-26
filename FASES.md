@@ -102,6 +102,36 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 2.6.0 — Estadísticas, modo portátil y línea de comandos ✅
+- **Estadísticas** (`Persistence/UsageStats.cs`, `MainWindow.Stats.cs`): `stats.json` junto a settings.json, solo local.
+  Hoy (se pone a cero al cambiar el día) y total: clics, teclas, macros reproducidas, tiempo y sesión más larga.
+  Se suman al parar el autoclicker (solo si el motor llegó a arrancar: `_clickRunCounting`) y al parar una macro
+  (vueltas completas + eventos de la última hasta donde llegó). Las pruebas del editor no cuentan. Uso por macro
+  ("Reproducida 12 veces · última, ayer") bajo la lectura de Macros; renombrar/borrar la macro lo actualiza.
+  Tarjeta en Ajustes (entre Clics y General) con Hoy/Total y Reiniciar.
+- **Modo portátil** (`Persistence/PortableMode.cs`): si existe `AutoClik-datos` junto al .exe, `SettingsStore.DataDirectory`
+  lo usa (manda incluso sobre `--data`, que sigue separando el mutex y el archivo de "Iniciar con Windows" de las pruebas).
+  Activar copia ajustes, stats, macros e imágenes allí; desactivar los devuelve (sustituyendo) y borra la carpeta.
+  Los dos reinician AutoClik (`App.Restart`, `--wait-pid=N`) sin volver a guardar al cerrar (si no, se recreaba la carpeta).
+  Sin permiso de escritura junto al .exe (Archivos de programa), avisa y no cambia nada.
+  Fallo encontrado por el usuario en un USB real: con el .exe en la raíz (`D:\`), `TrimEnd('\\')` dejaba "D:" y la ruta
+  "D:AutoClik-datos" era relativa a la unidad; la vista previa de una imagen de Vigilar (`new Uri`) fallaba en el
+  constructor y AutoClik quedaba abierto sin ventana (y cada nuevo .exe solo le avisaba). Ahora la ruta es completa
+  (`Path.GetFullPath`), la vista previa no puede tumbar el arranque y, si el arranque falla, se avisa y se cierra.
+  La prueba lo cubre con `subst` (raíz de una unidad simulada).
+- **Línea de comandos** (`CommandLine.cs`, `MainWindow.Commands.cs`): --start, --stop, --toggle, --play "Macro" (otra vez
+  la misma = parar), --profile "Nombre", --watch on|off, --show, --hide, --exit, --help (ventana con la lista). Si ya hay
+  una copia abierta, la nueva le pasa las órdenes por una tubería con nombre (`SingleInstance`, solo el usuario actual)
+  y se cierra; si no, arranca oculta con --play/--start/--toggle (mini ventana). --stop/--exit sin copia abierta no hacen nada.
+- **Accesos directos** (`Interop/Shortcut.cs`, WScript.Shell por reflexión): menú de la macro → "Crear acceso directo en el
+  escritorio" (`--play`), menú del perfil → "Acceso directo que empieza a clicar" (`--profile X --toggle`). Con `--data`
+  se crean en `<data>\desktop` y llevan el `--data`.
+- **Exportar / importar perfiles**: menú del perfil y Ajustes → General. `.autoclik-profile` con el perfil y las imágenes
+  de Vigilar en base64 (al importar solo se aceptan nombres de archivo .png simples). Nombre repetido → "P (2)".
+- Pruebas: nueva `tests/ui/estadisticas-ordenes.ps1` (incluye el modo portátil en una copia del .exe en la carpeta de
+  pruebas y los diálogos Guardar/Abrir, escritos con el teclado solo si el diálogo está delante); `clics-reales.ps1`
+  pulsa Hoy/Total con el ratón de verdad.
+
 ## Versión 2.5.0 — Programar y cadenas de macros ✅
 - **Programar** (`Scheduling/Schedule.cs`, `Views/ScheduleDialog`, `MainWindow.Schedule.cs`): botón de reloj
   junto a Iniciar (Clics, sin añadir filas: Clics sigue sin scroll) y junto a Reproducir (Macros).

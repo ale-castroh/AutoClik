@@ -27,7 +27,7 @@
                        Foreground="#D13438" />
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-                <Button Content="{l:T Cancel}" MinWidth="90" IsCancel="True" Style="{StaticResource SecondaryButtonStyle}"
+                <Button x:Name="CancelButton" Content="{l:T Cancel}" MinWidth="90" IsCancel="True" Style="{StaticResource SecondaryButtonStyle}"
                         Click="Cancel_Click" />
                 <Button x:Name="OkButton" Content="{l:T Save}" MinWidth="90" Margin="8,0,0,0" IsDefault="True"
                         Click="Ok_Click">

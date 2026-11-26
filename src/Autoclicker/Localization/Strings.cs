@@ -480,6 +480,92 @@ public static class Strings
         ["AfkEveryTip"] = ("Roblox expulsa tras 20 minutos sin actividad: deja algo de margen",
                            "Roblox kicks you after 20 minutes of inactivity: leave some margin"),
 
+        // ---- Estadísticas (2.6) ----
+        ["Stats"] = ("Estadísticas", "Statistics"),
+        ["StatsToday"] = ("Hoy", "Today"),
+        ["StatsTotal"] = ("Total", "Total"),
+        ["StatClicks"] = ("Clics", "Clicks"),
+        ["StatKeys"] = ("Teclas", "Keys"),
+        ["StatMacros"] = ("Macros reproducidas", "Macros played"),
+        ["StatTime"] = ("Tiempo clicando", "Time clicking"),
+        ["StatLongest"] = ("Sesión más larga: {0}", "Longest session: {0}"),
+        ["StatSince"] = ("Desde el {0} · solo en este PC", "Since {0} · only on this PC"),
+        ["StatsReset"] = ("Reiniciar", "Reset"),
+        ["StatsResetTitle"] = ("Reiniciar estadísticas", "Reset statistics"),
+        ["StatsResetConfirm"] = ("Se pondrán a cero los contadores de hoy, el total y las veces que se ha reproducido cada macro. No se puede deshacer.",
+                                 "Today's counters, the totals and how many times each macro was played will be set to zero. This can't be undone."),
+        ["MacroNeverPlayed"] = ("Aún no se ha reproducido", "Not played yet"),
+        ["MacroPlayedOnce"] = ("Reproducida 1 vez", "Played once"),
+        ["MacroPlayedTimes"] = ("Reproducida {0:N0} veces", "Played {0:N0} times"),
+        ["MacroPlayedLast"] = ("{0} · última, {1}", "{0} · last, {1}"),
+        ["WhenToday"] = ("hoy a las {0}", "today at {0}"),
+        ["WhenYesterday"] = ("ayer", "yesterday"),
+
+        // ---- Modo portátil (2.6) ----
+        ["Portable"] = ("Modo portátil", "Portable mode"),
+        ["PortableHint"] = ("Guarda todo en «AutoClik-datos», junto al .exe", "Keeps everything in \"AutoClik-datos\", next to the .exe"),
+        ["PortableOnTitle"] = ("Activar el modo portátil", "Turn on portable mode"),
+        ["PortableOffTitle"] = ("Desactivar el modo portátil", "Turn off portable mode"),
+        ["PortableOnConfirm"] = ("Tus ajustes, macros, imágenes de Vigilar y estadísticas se copiarán a:\n{0}\n\nDesde entonces AutoClik usará esa carpeta: puedes llevarlo en un USB con todo. AutoClik se reiniciará.",
+                                 "Your settings, macros, Watch images and statistics will be copied to:\n{0}\n\nFrom then on AutoClik will use that folder, so you can carry it on a USB drive. AutoClik will restart."),
+        ["PortableOffConfirm"] = ("Los datos de la carpeta portátil volverán a la carpeta normal de este PC, sustituyendo lo que haya en ella:\n{0}\n\nLa carpeta «AutoClik-datos» se borrará. AutoClik se reiniciará.",
+                                  "The data in the portable folder will move back to this PC's normal folder, replacing what's there:\n{0}\n\nThe \"AutoClik-datos\" folder will be deleted. AutoClik will restart."),
+        ["PortableRestart"] = ("Reiniciar", "Restart"),
+        ["PortableOnFailed"] = ("No se puede escribir en la carpeta de AutoClik.exe (por ejemplo, Archivos de programa está protegida). Copia AutoClik.exe a otra carpeta, como Documentos o un USB, y actívalo allí.",
+                                "Can't write to AutoClik.exe's folder (Program Files, for example, is protected). Copy AutoClik.exe to another folder, like Documents or a USB drive, and turn it on there."),
+        ["PortableOffFailed"] = ("No se pudieron mover los datos. El modo portátil sigue activado; los detalles están en error.log.",
+                                 "The data couldn't be moved. Portable mode is still on; details are in error.log."),
+        ["Ok"] = ("Aceptar", "OK"),
+
+        // ---- Línea de comandos y accesos directos (2.6) ----
+        ["CmdHelp"] = ("Órdenes de AutoClik.exe:\n\n" +
+                       "  --start              Empieza a clicar\n" +
+                       "  --stop               Para los clics y la macro\n" +
+                       "  --toggle             Empieza o para (como F6)\n" +
+                       "  --play \"Macro\"       Reproduce una macro (otra vez: la para)\n" +
+                       "  --profile \"Nombre\"   Cambia de perfil\n" +
+                       "  --watch on|off       Vigilar (experimental)\n" +
+                       "  --show / --hide      Muestra u oculta la ventana\n" +
+                       "  --exit               Cierra AutoClik\n" +
+                       "  --tray               Arranca oculto en la bandeja\n\n" +
+                       "Si AutoClik ya está abierto, la orden se le pasa. Ejemplo:\n" +
+                       "  AutoClik.exe --profile \"Juego\" --start",
+                       "AutoClik.exe commands:\n\n" +
+                       "  --start              Start clicking\n" +
+                       "  --stop               Stop clicking and the macro\n" +
+                       "  --toggle             Start or stop (like F6)\n" +
+                       "  --play \"Macro\"       Play a macro (again: stops it)\n" +
+                       "  --profile \"Name\"     Switch profile\n" +
+                       "  --watch on|off       Watch (experimental)\n" +
+                       "  --show / --hide      Show or hide the window\n" +
+                       "  --exit               Close AutoClik\n" +
+                       "  --tray               Start hidden in the tray\n\n" +
+                       "If AutoClik is already open, the command is passed to it. Example:\n" +
+                       "  AutoClik.exe --profile \"Game\" --start"),
+        ["CmdBadArg"] = ("Falta el valor de: {0}", "Missing value for: {0}"),
+        ["CmdNoMacro"] = ("No existe la macro «{0}»", "There's no macro called \"{0}\""),
+        ["CmdNoProfile"] = ("No existe el perfil «{0}»", "There's no profile called \"{0}\""),
+        ["CmdWatchExperimental"] = ("Vigilar es experimental: actívalo en Ajustes", "Watch is experimental: turn it on in Settings"),
+        ["MacroShortcut"] = ("Crear acceso directo en el escritorio", "Create desktop shortcut"),
+        ["ShortcutMacroDesc"] = ("Reproduce la macro «{0}» con AutoClik", "Plays the macro \"{0}\" with AutoClik"),
+        ["ShortcutProfileTitle"] = ("AutoClik - clicar con {0}", "AutoClik - click with {0}"),
+        ["ShortcutProfileDesc"] = ("Empieza o para los clics con el perfil «{0}»", "Starts or stops clicking with the \"{0}\" profile"),
+        ["ShortcutCreated"] = ("Acceso directo creado en el escritorio", "Shortcut created on the desktop"),
+        ["ShortcutFailed"] = ("No se pudo crear el acceso directo", "Couldn't create the shortcut"),
+
+        // ---- Exportar / importar perfiles (2.6) ----
+        ["Export"] = ("Exportar", "Export"),
+        ["Import"] = ("Importar", "Import"),
+        ["ProfilesHint"] = ("Pasar un perfil a otro PC", "Move a profile to another PC"),
+        ["ProfileExport"] = ("Exportar perfil…", "Export profile…"),
+        ["ProfileImport"] = ("Importar perfil…", "Import profile…"),
+        ["ProfileShortcut"] = ("Acceso directo que empieza a clicar", "Shortcut that starts clicking"),
+        ["ProfileFileFilter"] = ("Perfil de AutoClik (*.autoclik-profile)|*.autoclik-profile|Todos los archivos (*.*)|*.*",
+                                 "AutoClik profile (*.autoclik-profile)|*.autoclik-profile|All files (*.*)|*.*"),
+        ["ProfileExported"] = ("Perfil exportado", "Profile exported"),
+        ["ProfileImported"] = ("Perfil «{0}» importado", "Profile \"{0}\" imported"),
+        ["ProfileFileError"] = ("No se pudo leer o guardar el archivo del perfil", "Couldn't read or save the profile file"),
+
         // ---- Perfiles ----
         ["DefaultProfile"] = ("Predeterminado", "Default"),
         ["ProfileTip"] = ("Perfil: {0} · clic para cambiar", "Profile: {0} · click to switch"),
@@ -518,6 +604,9 @@ public static class Strings
         // ---- Errores ----
         ["UnexpectedError"] = ("Ha ocurrido un error inesperado. AutoClik sigue abierto; los detalles están en:\n{0}",
                                "An unexpected error occurred. AutoClik is still open; details are in:\n{0}"),
+
+        ["StartupError"] = ("AutoClik no pudo arrancar y se cerrará. Los detalles están en:\n{0}",
+                            "AutoClik couldn't start and will close. Details are in:\n{0}"),
 
         // ---- Selector de posición y grabadora ----
         ["PickHint"] = ("Clic para elegir · Esc para cancelar", "Click to pick · Esc to cancel"),

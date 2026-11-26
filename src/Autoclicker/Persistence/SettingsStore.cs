@@ -16,16 +16,34 @@ public sealed class SettingsStore
     /// <summary>Carpeta alternativa (argumento --data=...), útil para pruebas.</summary>
     public static string? DirectoryOverride { get; set; }
 
+    /// <summary>Modo portátil (2.6): si existe esta carpeta junto al .exe, todo se guarda en ella.</summary>
+    public const string PortableFolderName = "AutoClik-datos";
+
+    /// <summary>Carpeta del .exe, siempre completa (en la raíz de un USB es "D:\", nunca "D:").</summary>
+    public static string ExeDirectory => Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory);
+
+    public static string PortablePath => Path.GetFullPath(Path.Combine(ExeDirectory, PortableFolderName));
+
+    /// <summary>La carpeta portátil, si existe; null = modo normal.</summary>
+    public static string? PortableDirectory => Directory.Exists(PortablePath) ? PortablePath : null;
+
+    /// <summary>La carpeta de datos sin modo portátil (%AppData%\AutoClik, o la de --data).</summary>
+    public static string NormalDirectory =>
+        DirectoryOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppFolder);
+
+    /// <summary>Dónde están los datos ahora: la portátil manda sobre las demás.</summary>
+    public static string DataDirectory => PortableDirectory ?? NormalDirectory;
+
     public string FilePath { get; }
 
     private string? LegacyFilePath { get; }
 
     public SettingsStore(string? directory = null)
     {
-        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        directory ??= DirectoryOverride ?? Path.Combine(appData, AppFolder);
+        directory ??= DataDirectory;
         FilePath = Path.Combine(directory, "settings.json");
-        if (DirectoryOverride == null) LegacyFilePath = Path.Combine(appData, LegacyFolder, "settings.json");
+        if (DirectoryOverride == null && PortableDirectory == null)
+            LegacyFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), LegacyFolder, "settings.json");
     }
 
     public AppData Load()

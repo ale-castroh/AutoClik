@@ -49,9 +49,10 @@ public partial class NameDialog : Window
         return dialog.ShowDialog() == true ? dialog.ResultName : null;
     }
 
-    public static bool Confirm(Window owner, string title, string message, string okText)
+    public static bool Confirm(Window owner, string title, string message, string okText, bool showCancel = true)
     {
         var dialog = new NameDialog(title, message, "", okText, null, confirmOnly: true) { Owner = owner };
+        if (!showCancel) dialog.CancelButton.Visibility = Visibility.Collapsed; // solo un aviso
         return dialog.ShowDialog() == true;
     }
 

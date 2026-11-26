@@ -48,6 +48,11 @@ a donde quieras y volver para pulsar **Detener**.
 | **⚙ Ajustes → Experimental** | Muestra las funciones en pruebas (de momento, el Anti-AFK). Apagado por defecto |
 | **Vigilar** (experimental, F10) | Reglas "cuando aparezca esto, haz aquello". Qué vigilar: **un color en un punto** o **una imagen** (la recortas arrastrando sobre la pantalla) en toda la pantalla o en una zona, con tolerancia. Qué hacer: clic encima, clic en otro punto, pulsar una tecla, iniciar los clics, reproducir una macro o **parar todo**. Una vez o cada vez que vuelva a aparecer (no repite mientras siga a la vista). Revisa la pantalla unas 5 veces por segundo; los juegos a pantalla completa "exclusiva" se ven negros (usa ventana o ventana sin bordes) |
 | **Anti-AFK** (experimental) | Cada X minutos (1–18) trae al frente la ventana elegida (p. ej. Roblox) un instante, hace un clic en el punto elegido (o pulsa una tecla, p. ej. Espacio) y te devuelve a tu ventana con el ratón donde estaba. Espera a que dejes de usar el PC para no robarte teclas. **Probar ahora** hace un clic al momento |
+| **⚙ Ajustes → Estadísticas** | **Hoy / Total**: clics, teclas, macros reproducidas, tiempo clicando y la sesión más larga. Debajo de cada macro: cuántas veces se ha reproducido y cuándo fue la última. Solo en este PC (`stats.json`); **Reiniciar** las pone a cero |
+| **⚙ Ajustes → General → Modo portátil** | Copia ajustes, macros, imágenes y estadísticas a `AutoClik-datos`, junto al .exe, y los usa desde allí (para llevarlo en un USB). Si al abrir encuentra esa carpeta, la usa sola. Al desactivarlo los devuelve a `%AppData%\AutoClik`. AutoClik se reinicia en los dos casos |
+| **⚙ Ajustes → General → Perfiles** (o menú del perfil) | **Exportar / importar** un perfil (`.autoclik-profile`, con las imágenes de sus reglas de Vigilar dentro) |
+| **Accesos directos** (menú de la macro o del perfil) | Un icono en el escritorio que reproduce esa macro, o que empieza/para los clics con ese perfil |
+| **Línea de comandos** | `--start`, `--stop`, `--toggle`, `--play "Macro"`, `--profile "Nombre"`, `--watch on\|off`, `--show`, `--hide`, `--exit`; `--help` muestra la lista. Si AutoClik ya está abierto, la orden se le pasa; si no, arranca oculto (con `--play`, `--start` o `--toggle`). Ejemplo: `AutoClik.exe --profile "Juego" --start` |
 | **⚙ Ajustes → Acerca de** | Versión y botón para abrir la carpeta de ajustes y del registro de errores |
 | **📌** (barra de título) | Mantener la ventana siempre visible |
 
@@ -62,7 +67,8 @@ a donde quieras y volver para pulsar **Detener**.
 Todo se guarda solo en `%AppData%\AutoClik\settings.json` (perfiles, puntos, atajo, posición
 de la ventana). Para empezar de cero, borra ese archivo con la app cerrada. Los ajustes de versiones
 anteriores (`%AppData%\Autoclicker`) se importan solos la primera vez. Si ocurre un error inesperado,
-los detalles quedan en `error.log`, en esa misma carpeta.
+los detalles quedan en `error.log`, en esa misma carpeta. En **modo portátil**, todo va en la carpeta
+`AutoClik-datos`, junto al .exe.
 
 ### Si Windows lo bloquea
 
@@ -96,8 +102,10 @@ src/Autoclicker/
   Watch/        Vigilar: leer la pantalla, buscar imágenes, reglas y vigilante
   Macros/       macros: modelo, pasos del editor, biblioteca, grabadora (hooks) y reproductor
   Markers/      puntos y marcadores en pantalla
-  Persistence/  perfiles y guardado en JSON
-  Interop/      Win32: fondo translúcido, bandeja, logo, inicio con Windows
+  Persistence/  perfiles, guardado en JSON, estadísticas y modo portátil
+  Interop/      Win32: fondo translúcido, bandeja, logo, inicio con Windows, accesos directos
+  Scheduling/   programar (empezar a una hora, apagar al terminar)
+  CommandLine.cs  órdenes --play, --start... (se pasan a la copia abierta)
   Theme/        paletas claro/oscuro, estilos de los controles y formas del logo
   Views/        selector de posición, marcadores, editor de puntos, editor de macros, diálogos, barra de grabación
 tests/

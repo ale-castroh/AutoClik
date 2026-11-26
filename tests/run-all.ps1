@@ -51,6 +51,7 @@ $ui = @(
     @{ Name = 'Editor de macros'; File = 'macro-editor.ps1' },
     @{ Name = 'Vigilar (experimental) y esperar a un color'; File = 'vigilar.ps1' },
     @{ Name = 'Programar y cadenas de macros'; File = 'programar.ps1' },
+    @{ Name = 'Estadísticas, órdenes, perfiles y modo portátil'; File = 'estadisticas-ordenes.ps1' },
     @{ Name = 'Clics de ratón reales en cada sección'; File = 'clics-reales.ps1' }
 )
 foreach ($t in $ui) {

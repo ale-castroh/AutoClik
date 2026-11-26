@@ -190,6 +190,9 @@ public partial class MainWindow
         if (EmergencySwitch.IsChecked == true) EmergencyCornerWatcher.Start();
         MacroPlayOptions options = ReadPlayOptions();
         if (_testMacro != null) options = options with { Repeat = MacroRepeat.Once };
+        // Estadísticas (2.6): las pruebas del editor no cuentan
+        _macroStatsName = _testMacro == null ? source.Name : null;
+        _macroStatsStart = System.Diagnostics.Stopwatch.GetTimestamp();
         _player.Play(_playing, options);
         _macroTimer?.Start();
         MacroOptionsCard.IsEnabled = false;
@@ -208,6 +211,7 @@ public partial class MainWindow
         RecordMacroButton.IsEnabled = true;
         _macroNotice ??= Strings.T("Stopped");
         string playedName = _playing?.Name ?? _macro?.Name ?? "";
+        CountMacroRun(_playing);
         _playing = null;
         OnMacroStopped(playedName);
         ShowAfterMacro();
@@ -298,8 +302,11 @@ public partial class MainWindow
                                      n => ValidateMacroName(n, chain));
         if (result is not { } r) return;
         chain.Chain = r.Items;
+        string oldChainName = chain.Name;
         if (r.Name != chain.Name && _macroStore.Rename(chain, r.Name))
         {
+            _stats.RenameMacro(oldChainName, r.Name);
+            _stats.Save();
             _macros = _macros.OrderBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
             RebuildMacroHotkeys();
             ScheduleSave();
@@ -460,6 +467,7 @@ public partial class MainWindow
         menu.Items.Add(MacroAction("MacroRename", "", RenameMacro, has));
         menu.Items.Add(MacroAction("MacroDuplicate", "", DuplicateMacro, has));
         menu.Items.Add(MacroAction("MacroExport", "", ExportMacro, has));
+        menu.Items.Add(MacroAction("MacroShortcut", "", MacroShortcut, has));
         menu.Items.Add(MacroAction("MacroNewChain", "\uE71B", NewChain, true));
         menu.Items.Add(MacroAction("MacroImport", "", ImportMacro, true));
         menu.Items.Add(MacroAction("MacroDelete", "", DeleteMacro, has));
@@ -492,6 +500,8 @@ public partial class MainWindow
         string oldName = macro.Name;
         if (_macroStore.Rename(macro, name))
         {
+            _stats.RenameMacro(oldName, name);
+            _stats.Save();
             // Las cadenas que la usaban siguen apuntando a ella
             foreach (var chain in _macros.Where(m => m.Chain?.Any(c => c.Macro == oldName) == true).ToList())
             {
@@ -523,6 +533,8 @@ public partial class MainWindow
             return;
         _macroStore.Delete(macro);
         _macros.Remove(macro);
+        _stats.ForgetMacro(macro.Name);
+        _stats.Save();
         RebuildMacroHotkeys();
         SelectMacro(_macros.FirstOrDefault());
         UpdateMacroUi();
@@ -581,6 +593,7 @@ public partial class MainWindow
     private void UpdateMacroUi()
     {
         UpdateScheduleButtons();
+        UpdateMacroUsage();
         MacroNameText.Text = _macro?.Name ?? Strings.T("MacroNone");
         PlayMacroButton.IsEnabled = _macro != null || PlayMacroButton.IsChecked == true;
 

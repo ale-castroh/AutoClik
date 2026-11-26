@@ -140,12 +140,21 @@ public static class WatchImages
     public static BitmapImage? Preview(string? name)
     {
         if (string.IsNullOrEmpty(name) || !File.Exists(PathOf(name!))) return null;
-        var image = new BitmapImage();
-        image.BeginInit();
-        image.CacheOption = BitmapCacheOption.OnLoad;
-        image.UriSource = new Uri(PathOf(name!));
-        image.EndInit();
-        image.Freeze();
-        return image;
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.UriSource = new Uri(Path.GetFullPath(PathOf(name!)));
+            image.EndInit();
+            image.Freeze();
+            return image;
+        }
+        catch (Exception ex) when (ex is UriFormatException or IOException or NotSupportedException
+                                       or UnauthorizedAccessException or System.IO.FileFormatException or ArgumentException)
+        {
+            ErrorLog.Write("vista previa de imagen", ex);
+            return null; // sin vista previa, pero la regla sigue
+        }
     }
 }

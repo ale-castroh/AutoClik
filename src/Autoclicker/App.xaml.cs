@@ -56,15 +56,46 @@ public partial class App : Application
             {
                 Persistence.SettingsStore.DirectoryOverride = arg.Substring("--data=".Length).Trim('"');
             }
+            // --wait-pid=N: al reiniciar (modo portátil), esperar a que se cierre la copia anterior.
+            else if (arg.StartsWith("--wait-pid=", StringComparison.OrdinalIgnoreCase)
+                     && int.TryParse(arg.Substring("--wait-pid=".Length), out int pid))
+            {
+                try { using var old = System.Diagnostics.Process.GetProcessById(pid); old.WaitForExit(8000); }
+                catch (ArgumentException) { /* ya se cerró */ }
+                continue;
+            }
+            // Al reiniciar se repiten los ajustes de arranque (no las órdenes)
+            if (StartupPrefixes.Any(p => arg.StartsWith(p, StringComparison.OrdinalIgnoreCase))) _restartArgs.Add(arg);
+        }
+
+        // Órdenes (2.6): --play "Macro", --start, --stop...
+        var commands = CommandLine.Parse(e.Args, out bool help, out var badArgs);
+        if (help || badArgs.Count > 0)
+        {
+            string text = Localization.Strings.T("CmdHelp");
+            if (badArgs.Count > 0) text = Localization.Strings.F("CmdBadArg", string.Join(" ", badArgs)) + "\n\n" + text;
+            MessageBox.Show(text, "AutoClik", MessageBoxButton.OK, badArgs.Count > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+            Shutdown();
+            return;
         }
 
         // Una sola copia: si ya hay una abierta, se la trae al frente y esta se cierra
         // (salvo al arrancar en la bandeja: entonces no se molesta a la que ya está abierta).
-        if (!SingleInstance.TryAcquire(Persistence.SettingsStore.DirectoryOverride, notifyExisting: !startInTray))
+        // Con órdenes, se le pasan a esa copia en vez de traerla al frente.
+        if (!SingleInstance.TryAcquire(Persistence.SettingsStore.DirectoryOverride, notifyExisting: !startInTray && commands.Count == 0))
         {
+            if (commands.Count > 0) SingleInstance.SendCommands(CommandLine.Serialize(commands));
             Shutdown();
             return;
         }
+        // No estaba abierto: parar o salir no tienen nada que hacer.
+        if (CommandLine.OnlyStopOrExit(commands))
+        {
+            SingleInstance.Release();
+            Shutdown();
+            return;
+        }
+        if (CommandLine.StartsHidden(commands)) startInTray = true;
 
         // Errores inesperados: se registran en error.log en vez de cerrar la app sin dejar rastro.
         DispatcherUnhandledException += OnUiException;
@@ -76,11 +107,56 @@ public partial class App : Application
         ThemeManager.Apply();
         base.OnStartup(e);
 
-        var window = new MainWindow();
+        MainWindow window;
+        try
+        {
+            window = new MainWindow();
+        }
+        catch (Exception ex)
+        {
+            // Sin ventana no hay forma de usar ni cerrar AutoClik: avisar y salir, en vez de quedarse invisible
+            // (si no, cada vez que se abre el .exe se avisaría a esta copia y no aparecería nada).
+            ErrorLog.Write("arranque", ex);
+            MessageBox.Show(Localization.Strings.F("StartupError", ErrorLog.FilePath), "AutoClik",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+            SingleInstance.Release();
+            Shutdown();
+            return;
+        }
         MainWindow = window;
         if (startInTray) new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle(); // atajo y bandeja, sin ventana
         else window.Show();
         SingleInstance.ListenForShow(() => window.Dispatcher.InvokeAsync(window.BringToFront));
+        SingleInstance.ListenForCommands(text =>
+            window.Dispatcher.InvokeAsync(() => window.RunCommands(CommandLine.Deserialize(text))));
+        if (commands.Count > 0)
+            window.Dispatcher.InvokeAsync(() => window.RunCommands(commands), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+    }
+
+    // ================= Reiniciar (modo portátil, 2.6) =================
+
+    private readonly List<string> _restartArgs = [];
+
+    private static readonly string[] StartupPrefixes =
+    [
+        "--theme=", "--lang=", "--data=", "--record-injected", "--antiafk-seconds=", "--schedule-seconds",
+        "--power-test", "--countdown-seconds=",
+    ];
+
+    /// <summary>Abre una copia nueva (que espera a que esta se cierre) con los mismos argumentos de arranque.</summary>
+    public void Restart()
+    {
+        var args = _restartArgs.Where(a => !a.Equals(Interop.Autostart.TrayArgument, StringComparison.OrdinalIgnoreCase))
+            .Select(a => a.Contains(' ') ? "\"" + a.Replace("\"", "") + "\"" : a)
+            .Append("--wait-pid=" + Compat.ProcessId);
+        try
+        {
+            System.Diagnostics.Process.Start(System.Diagnostics.Process.GetCurrentProcess().MainModule!.FileName, string.Join(" ", args));
+        }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            ErrorLog.Write("reiniciar", ex);
+        }
     }
 
     private bool _errorShown;
