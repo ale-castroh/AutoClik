@@ -73,6 +73,16 @@ Click "AntiAfkSwitch"; $afkOn = Tog 'AntiAfkSwitch'
 Click "AntiAfkSwitch"; $afkOff = Tog 'AntiAfkSwitch'
 "4) Anti-AFK: sección=$(Tog 'NavAntiAfkButton') Activar=$afkOn Desactivar=$afkOff (esperado On / On / Off)"
 
+# Vigilar (2.4): sin reglas no empieza; "Nueva regla" abre el diálogo y Cancelar lo cierra
+Click "NavWatchButton"
+Click "WatchToggle"; $watchOn = Tog 'WatchToggle'
+Click "AddRuleButton"; Start-Sleep -Milliseconds 300
+$dialogCancel = $AE::RootElement.FindFirst($TS::Descendants, (New-Object Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "CancelButton")))
+if ($dialogCancel) { ClickEl $dialogCancel "Cancelar regla" }
+Start-Sleep -Milliseconds 300
+$stillOpen = $null -ne $AE::RootElement.FindFirst($TS::Descendants, (New-Object Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "ToleranceBox")))
+"4a) Vigilar: sección=$(Tog 'NavWatchButton') sin reglas no empieza=$watchOn diálogo abierto=$($null -ne $dialogCancel) cerrado con Cancelar=$(-not $stillOpen) (esperado On, Off, True, True)"
+
 # Editor de macros (2.3): elegir un paso, Borrar, Deshacer y Cancelar con clics reales
 Click "NavMacrosButton"
 (Find "MacroPickButton").GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke(); Start-Sleep -Milliseconds 600

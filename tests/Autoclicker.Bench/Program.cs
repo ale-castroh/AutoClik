@@ -20,6 +20,13 @@ static void Target(int seconds)
         StartPosition = FormStartPosition.Manual, Bounds = new Rectangle(200, 200, 240, 240),
         BackColor = Color.MediumPurple, ShowInTaskbar = false,
     };
+    // Dibujo reconocible para las pruebas de "Vigilar" (2.4): cuadrado amarillo de 30 px con el centro
+    // negro, en (160, 20) de la ventana; en pantalla, (360, 220)-(390, 250).
+    form.Paint += (_, e) =>
+    {
+        e.Graphics.FillRectangle(Brushes.Gold, 160, 20, 30, 30);
+        e.Graphics.FillRectangle(Brushes.Black, 170, 30, 10, 10);
+    };
     int left = 0, wheel = 0;
     var hits = new List<string>();
     var keys = new List<string>();

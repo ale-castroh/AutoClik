@@ -80,7 +80,7 @@ public partial class MacroEditor : Window
         _loading = false;
 
         foreach (var box in new[] { WaitBox, HoldBox, ShortenBox }) AllowNumber(box, decimals: true);
-        foreach (var box in new[] { XBox, YBox }) AllowNumber(box, decimals: false);
+        foreach (var box in new[] { XBox, YBox, TimeoutBox }) AllowNumber(box, decimals: false);
 
         Rebuild(_steps.Count > 0 ? 0 : null);
         Loaded += (_, _) => StepList.Focus();
@@ -168,22 +168,33 @@ public partial class MacroEditor : Window
         StepTitleText.Visibility = step == null ? Visibility.Collapsed : Visibility.Visible;
 
         bool key = step?.Kind is StepKind.KeyPress or StepKind.KeyDown or StepKind.KeyUp;
-        bool position = step?.Kind is StepKind.Click or StepKind.ButtonDown or StepKind.ButtonUp;
+        bool position = step?.Kind is StepKind.Click or StepKind.ButtonDown or StepKind.ButtonUp or StepKind.WaitColor;
+        bool waitColor = step?.Kind == StepKind.WaitColor;
         Show(WaitRow, step != null);
         Show(KeyRow, key);
         Show(HoldRow, step?.Kind == StepKind.KeyPress);
         Show(PositionRow, position);
         Show(TextRow, step?.Kind == StepKind.Text);
+        Show(ColorRow, waitColor);
+        Show(TimeoutRow, waitColor);
 
         if (step != null)
         {
             WaitBox.Text = MacroSteps.Seconds(step.WaitBefore);
             if (key) KeyButton.Content = Input.Hotkey.KeyName(step.Events.First(e => e.Kind is MacroEventKind.KeyDown or MacroEventKind.KeyUp).Data);
             if (step.Kind == StepKind.KeyPress) HoldBox.Text = MacroSteps.Seconds(step.Duration);
-            if (position && step.FirstPointer is { } p)
+            if (position && (waitColor ? step.Events[0] : step.FirstPointer) is { } p)
             {
                 XBox.Text = p.X.ToString(CultureInfo.InvariantCulture);
                 YBox.Text = p.Y.ToString(CultureInfo.InvariantCulture);
+            }
+            if (waitColor)
+            {
+                MacroEvent w = step.Events[0];
+                WaitColorSwatch.Background = new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromRgb((byte)(w.Data >> 16), (byte)(w.Data >> 8), (byte)w.Data));
+                WaitColorText.Text = $"#{w.Data:X6}";
+                TimeoutBox.Text = w.WaitTimeoutSeconds.ToString(CultureInfo.InvariantCulture);
             }
             if (step.Kind == StepKind.Text) StepTextBox.Text = MacroSteps.TextOf(step);
         }
@@ -204,7 +215,12 @@ public partial class MacroEditor : Window
         else if ((sender == XBox || sender == YBox)
                  && int.TryParse(XBox.Text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int x)
                  && int.TryParse(YBox.Text, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out int y))
-            MacroSteps.SetPosition(step, x, y);
+        {
+            if (step.Kind == StepKind.WaitColor) MacroSteps.SetWaitPoint(step, x, y);
+            else MacroSteps.SetPosition(step, x, y);
+        }
+        else if (sender == TimeoutBox && int.TryParse(TimeoutBox.Text, out int seconds) && seconds > 0)
+            MacroSteps.SetWaitTimeout(step, seconds);
         else if (sender == StepTextBox && StepTextBox.Text.Length > 0) MacroSteps.SetText(step, StepTextBox.Text);
         else return;
 
@@ -229,7 +245,8 @@ public partial class MacroEditor : Window
     {
         if (SingleSelected is not { } step || PickOnScreen() is not { } p) return;
         PushUndo();
-        MacroSteps.SetPosition(step, p.X, p.Y);
+        if (step.Kind == StepKind.WaitColor) MacroSteps.SetWaitPoint(step, p.X, p.Y, ColorUnder(p.X, p.Y));
+        else MacroSteps.SetPosition(step, p.X, p.Y);
         Changed(_steps.IndexOf(step));
     }
 
@@ -243,6 +260,7 @@ public partial class MacroEditor : Window
         menu.Items.Add(MenuAction("EditorInsertKey", "", () => InsertKey(at), true));
         menu.Items.Add(MenuAction("EditorInsertText", "", () => InsertText(at), true));
         menu.Items.Add(MenuAction("EditorInsertClick", "", () => InsertClick(at), true));
+        menu.Items.Add(MenuAction("EditorInsertWaitColor", "\uE7B3", () => InsertWaitColor(at), true));
         menu.IsOpen = true;
     }
 
@@ -282,6 +300,18 @@ public partial class MacroEditor : Window
         if (PickOnScreen() is not { } p) return;
         Insert(at, MacroSteps.NewClick(MacroButton.Left, p.X, p.Y, 300_000));
     }
+
+    /// <summary>Esperar a que un punto tenga el color que tiene ahora (como mucho 30 s).</summary>
+    private void InsertWaitColor(int at)
+    {
+        if (PickOnScreen() is not { } p) return;
+        Insert(at, MacroSteps.NewWaitColor(p.X, p.Y, ColorUnder(p.X, p.Y), 30, 0));
+    }
+
+    /// <summary>Color del punto, leído con el editor aún oculto (tras dejar que la pantalla se redibuje).</summary>
+    private int ColorUnder(int x, int y) => _pickedColor ?? Watch.ScreenCapture.PixelAt(x, y);
+
+    private int? _pickedColor;
 
     private void Insert(int at, MacroStep step)
     {
@@ -440,6 +470,12 @@ public partial class MacroEditor : Window
         Hide();
         owner?.Hide();
         var picked = PositionPicker.Pick(null, hint);
+        _pickedColor = null;
+        if (picked is { } at)
+        {
+            Thread.Sleep(180); // que la capa de elegir desaparezca de la pantalla
+            _pickedColor = Watch.ScreenCapture.PixelAt(at.X, at.Y);
+        }
         owner?.Show();
         Show();
         Activate();

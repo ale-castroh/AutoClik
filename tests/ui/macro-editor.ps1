@@ -8,6 +8,11 @@ using System; using System.Runtime.InteropServices;
 public static class R {
   [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
   [DllImport("user32.dll")] public static extern short GetAsyncKeyState(int vk);
+  [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(PT p);
+  [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr h, uint f);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [StructLayout(LayoutKind.Sequential)] public struct PT { public int X, Y; }
+  public static uint PidAt(int x, int y) { var p = new PT { X = x, Y = y }; uint pid; GetWindowThreadProcessId(GetAncestor(WindowFromPoint(p), 2), out pid); return pid; }
 }
 "@
 [R]::SetProcessDPIAware() | Out-Null
@@ -29,6 +34,14 @@ $ev = "0,1,260,260,0,0;40000,2,260,260,0,0;200000,5,30,0,65,0;260000,6,30,0,65,0
 
 $out = Join-Path $env:TEMP "diana_p13.txt"
 $bench = Start-Process $BenchPath -ArgumentList "target", "24" -PassThru -RedirectStandardOutput $out -WindowStyle Hidden
+Start-Sleep -Milliseconds 1000
+# Seguridad: la app va a clicar en estos puntos. Si encima de la diana hay otra ventana (p. ej. un Paint
+# tuyo), los clics irían a ella: no seguir.
+$blocked = @(@(260,260), @(300,320), @(320,320)) | Where-Object { [R]::PidAt($_[0], $_[1]) -ne $bench.Id }
+if ($blocked) {
+  "OMITIDA: otra ventana tapa la diana en " + (($blocked | ForEach-Object { "($($_[0]),$($_[1]))" }) -join ' ') + ". Apártala y repite."
+  $bench.Kill(); return
+}
 $proc = Start-Process $AppPath -ArgumentList "--data=$data", "--theme=dark" -PassThru
 while ($proc.MainWindowHandle -eq 0) { Start-Sleep -Milliseconds 50; $proc.Refresh() }
 Start-Sleep -Milliseconds 900

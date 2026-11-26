@@ -26,6 +26,27 @@
             <Separator />
             <MenuItem Header="{l:T TrayExit}" Icon="&#xE7E8;" Click="TrayExit_Click" />
         </ContextMenu>
+        <!-- Fila de una regla de Vigilar: botón plano que ocupa la fila (clic = editar) -->
+        <Style x:Key="RuleRowButtonStyle" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusVisual}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="Transparent" CornerRadius="5" Padding="8,6">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource SubtleHoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -90,6 +111,10 @@
                                   Style="{StaticResource NavButtonStyle}" Checked="Nav_Checked" Unchecked="Nav_Unchecked" />
                     <ToggleButton x:Name="NavAntiAfkButton" Content="&#xE823;" ToolTip="{l:T AntiAfk}"
                                   Tag="{Binding IsChecked, ElementName=AntiAfkSwitch}"
+                                  Visibility="{Binding IsChecked, ElementName=ExperimentalSwitch, Converter={StaticResource BoolToVis}}"
+                                  Style="{StaticResource NavButtonStyle}" Checked="Nav_Checked" Unchecked="Nav_Unchecked" />
+                    <ToggleButton x:Name="NavWatchButton" Content="&#xE7B3;" ToolTip="{l:T Watch}"
+                                  Tag="{Binding IsChecked, ElementName=WatchToggle}"
                                   Visibility="{Binding IsChecked, ElementName=ExperimentalSwitch, Converter={StaticResource BoolToVis}}"
                                   Style="{StaticResource NavButtonStyle}" Checked="Nav_Checked" Unchecked="Nav_Unchecked" />
                 </StackPanel>
@@ -587,6 +612,72 @@
                            Style="{StaticResource CaptionStyle}" />
             </StackPanel>
 
+            <!-- ================= Vigilar (2.4, experimental) ================= -->
+            <StackPanel x:Name="WatchPage" Margin="12,0,16,16" Visibility="Collapsed">
+                <StackPanel.RenderTransform>
+                    <TranslateTransform />
+                </StackPanel.RenderTransform>
+
+                <StackPanel Margin="2,6,0,16">
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="7" Height="7" VerticalAlignment="Center">
+                            <Ellipse.Style>
+                                <Style TargetType="Ellipse">
+                                    <Setter Property="Fill" Value="{DynamicResource IdleDotBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=WatchToggle}" Value="True">
+                                            <Setter Property="Fill" Value="{DynamicResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Ellipse.Style>
+                        </Ellipse>
+                        <TextBlock x:Name="WatchStatusText" Text="{l:T WatchOff}" Margin="7,0,0,0" FontSize="12"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsChecked, ElementName=WatchToggle}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <TextBlock x:Name="WatchCountText" Text="0" Margin="-2,6,0,0" FontFamily="{StaticResource NumberFont}"
+                               FontSize="52" LineStackingStrategy="BlockLineHeight" LineHeight="48" />
+                    <TextBlock x:Name="WatchDetailText" Text="{l:T WatchTimes}" TextTrimming="CharacterEllipsis"
+                               Style="{StaticResource CaptionStyle}" />
+
+                    <ToggleButton x:Name="WatchToggle" Margin="0,16,0,0" Style="{StaticResource PrimaryToggleStyle}"
+                                  Content="{l:T WatchStart}" t:Ui.CheckedText="{l:T WatchStop}" t:Ui.KeyText="F10"
+                                  ToolTip="{l:T WatchTip}" Checked="Watch_Checked" Unchecked="Watch_Unchecked" />
+                </StackPanel>
+
+                <Border Style="{StaticResource ListCardStyle}">
+                    <StackPanel>
+                        <ScrollViewer Style="{StaticResource ThinScrollViewerStyle}" MaxHeight="196" VerticalScrollBarVisibility="Auto"
+                                      Focusable="False">
+                            <StackPanel x:Name="WatchRuleList" Margin="4,4,4,0" />
+                        </ScrollViewer>
+                        <TextBlock x:Name="WatchEmptyText" Text="{l:T WatchEmpty}" Margin="14,12,14,4" TextWrapping="Wrap"
+                                   Style="{StaticResource CaptionStyle}" />
+                        <Button x:Name="AddRuleButton" Margin="4,0,4,4" Style="{StaticResource RuleRowButtonStyle}" Click="AddRule_Click">
+                            <StackPanel Orientation="Horizontal" Margin="0,4">
+                                <TextBlock Text="&#xE710;" FontFamily="{StaticResource IconFont}" FontSize="12" Width="30"
+                                           TextAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
+                                <TextBlock Text="{l:T WatchNewRule}" Margin="6,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="{l:T WatchNote}" Margin="2,12,2,0" TextWrapping="Wrap" Style="{StaticResource CaptionStyle}" />
+            </StackPanel>
+
             <!-- ================= Página de ajustes ================= -->
             <!-- Ajustes: con scroll si no cabe (la página principal nunca lo tiene) -->
             <!-- Visible solo con Ajustes abierto: el contenedor comparte celda con Clics y, aunque su
@@ -641,6 +732,15 @@
                                           Checked="AnyHotkeyButton_Checked" Unchecked="AnyHotkeyButton_Unchecked" />
                             <TextBlock Text="{l:T MacroPlayHotkey}" Style="{StaticResource RowTitleStyle}" />
                         </DockPanel>
+                        <StackPanel Visibility="{Binding IsChecked, ElementName=ExperimentalSwitch, Converter={StaticResource BoolToVis}}">
+                            <Border Style="{StaticResource ListDividerStyle}" />
+                            <DockPanel Style="{StaticResource ListRowStyle}">
+                                <ToggleButton x:Name="WatchHotkeyButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                              Content="F10" Style="{StaticResource KeyCapStyle}"
+                                              Checked="AnyHotkeyButton_Checked" Unchecked="AnyHotkeyButton_Unchecked" />
+                                <TextBlock Text="{l:T WatchHotkey}" Style="{StaticResource RowTitleStyle}" />
+                            </DockPanel>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

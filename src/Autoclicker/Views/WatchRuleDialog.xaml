@@ -1,0 +1,179 @@
+<Window x:Class="Autoclicker.Views.WatchRuleDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:Autoclicker.Localization"
+        Title="Regla"
+        SizeToContent="WidthAndHeight" WindowStartupLocation="CenterOwner"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" ShowInTaskbar="False"
+        FontFamily="{StaticResource UiFont}" FontSize="13"
+        Foreground="{DynamicResource TextPrimaryBrush}">
+
+    <Window.Resources>
+        <Style x:Key="LabelStyle" TargetType="TextBlock" BasedOn="{StaticResource RowTitleStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+        <!-- Desplegable: como un botón secundario, pero el contenido ocupa todo el ancho -->
+        <Style x:Key="DropdownButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid SnapsToDevicePixels="True">
+                            <Border x:Name="Bg" CornerRadius="5" BorderThickness="1"
+                                    Background="{DynamicResource ControlBackgroundBrush}"
+                                    BorderBrush="{DynamicResource ControlBorderBrush}" />
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="AccentButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border CornerRadius="6" Background="{DynamicResource AccentBrush}" />
+                            <Border x:Name="Hover" CornerRadius="6" Opacity="0" Background="#22FFFFFF" />
+                            <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Hover" Property="Opacity" Value="1" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Margin="14" Padding="18,16" Width="380" CornerRadius="10" BorderThickness="1"
+            Background="{DynamicResource ToolTipBackgroundBrush}" BorderBrush="{DynamicResource CardBorderBrush}">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="20" ShadowDepth="3" Opacity="0.3" Color="Black" />
+        </Border.Effect>
+
+        <StackPanel>
+            <TextBlock x:Name="TitleText" FontFamily="{StaticResource DisplayFont}" FontSize="16" FontWeight="SemiBold" />
+
+            <!-- Qué vigilar -->
+            <TextBlock Text="{l:T WatchWhen}" Style="{StaticResource LabelStyle}" Margin="0,14,0,6" />
+            <Border Style="{StaticResource SegmentedContainerStyle}">
+                <UniformGrid Columns="2">
+                    <RadioButton x:Name="ColorRadio" Content="{l:T WatchKindColor}" GroupName="WatchKind" IsChecked="True"
+                                 Style="{StaticResource CompactSegmentStyle}" Checked="Kind_Checked" />
+                    <RadioButton x:Name="ImageRadio" Content="{l:T WatchKindImage}" GroupName="WatchKind"
+                                 Style="{StaticResource CompactSegmentStyle}" Checked="Kind_Checked" />
+                </UniformGrid>
+            </Border>
+
+            <!-- Color en un punto -->
+            <DockPanel x:Name="ColorPanel" Margin="0,10,0,0">
+                <Button x:Name="PickColorButton" DockPanel.Dock="Right" Content="{l:T Pick}" VerticalAlignment="Center"
+                        Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T WatchPickColorTip}" Click="PickColor_Click" />
+                <Border x:Name="ColorSwatch" Width="26" Height="26" CornerRadius="5" BorderThickness="1"
+                        BorderBrush="{DynamicResource ControlStrongBorderBrush}" Background="Transparent" />
+                <TextBlock x:Name="ColorText" Margin="10,0,8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                           FontFamily="{StaticResource NumberFont}" />
+            </DockPanel>
+
+            <!-- Imagen en una zona -->
+            <StackPanel x:Name="ImagePanel" Margin="0,10,0,0" Visibility="Collapsed">
+                <DockPanel>
+                    <Button x:Name="CropButton" DockPanel.Dock="Right" Content="{l:T WatchCrop}" VerticalAlignment="Center"
+                            Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T WatchCropTip}" Click="Crop_Click" />
+                    <Border Height="48" HorizontalAlignment="Left" MinWidth="48" MaxWidth="220" CornerRadius="5" BorderThickness="1"
+                            BorderBrush="{DynamicResource ControlBorderBrush}" Background="{DynamicResource ControlBackgroundBrush}">
+                        <Grid>
+                            <Image x:Name="ImagePreview" Stretch="Uniform" Margin="3" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                            <TextBlock x:Name="NoImageText" Text="{l:T WatchNoImage}" Margin="10,0" VerticalAlignment="Center"
+                                       TextWrapping="Wrap" MaxWidth="200" Style="{StaticResource CaptionStyle}" />
+                        </Grid>
+                    </Border>
+                </DockPanel>
+                <DockPanel Margin="0,10,0,0">
+                    <Button x:Name="ZoneButton" DockPanel.Dock="Right" Content="{l:T WatchPickZone}" VerticalAlignment="Center"
+                            Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T WatchPickZoneTip}" Click="Zone_Click" />
+                    <Button x:Name="AllScreenButton" DockPanel.Dock="Right" Content="{l:T WatchAllScreen}" Margin="0,0,6,0"
+                            VerticalAlignment="Center" Style="{StaticResource SecondaryButtonStyle}" Click="AllScreen_Click" />
+                    <TextBlock Text="{l:T WatchWhere}" Style="{StaticResource LabelStyle}" Margin="0" VerticalAlignment="Center" />
+                    <TextBlock x:Name="ZoneText" Margin="8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+            </StackPanel>
+
+            <DockPanel Margin="0,10,0,0">
+                <TextBlock DockPanel.Dock="Right" Text="%" Style="{StaticResource UnitStyle}" />
+                <TextBox x:Name="ToleranceBox" DockPanel.Dock="Right" Text="10" MaxLength="3" Style="{StaticResource SmallFieldStyle}" />
+                <TextBlock Text="{l:T WatchTolerance}" Style="{StaticResource LabelStyle}" Margin="0" VerticalAlignment="Center"
+                           ToolTip="{l:T WatchToleranceTip}" />
+            </DockPanel>
+
+            <!-- Qué hacer -->
+            <TextBlock Text="{l:T WatchDo}" Style="{StaticResource LabelStyle}" Margin="0,16,0,6" />
+            <Button x:Name="ActionButton" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Height="30"
+                    Style="{StaticResource DropdownButtonStyle}" Click="Action_Click">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" FontFamily="{StaticResource IconFont}" FontSize="9"
+                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="ActionText" VerticalAlignment="Center" />
+                </DockPanel>
+            </Button>
+
+            <DockPanel x:Name="ActionPointRow" Margin="0,8,0,0">
+                <Button x:Name="PickActionPointButton" DockPanel.Dock="Right" Content="{l:T Pick}" VerticalAlignment="Center"
+                        Style="{StaticResource SecondaryButtonStyle}" ToolTip="{l:T PickTip}" Click="PickActionPoint_Click" />
+                <TextBlock x:Name="ActionPointText" VerticalAlignment="Center" Style="{StaticResource CaptionStyle}" />
+            </DockPanel>
+            <DockPanel x:Name="ActionKeyRow" Margin="0,8,0,0">
+                <ToggleButton x:Name="ActionKeyButton" DockPanel.Dock="Right" Style="{StaticResource KeyCapStyle}"
+                              VerticalAlignment="Center" Click="ActionKey_Click" />
+                <TextBlock Text="{l:T WatchKeyHint}" VerticalAlignment="Center" Style="{StaticResource CaptionStyle}" />
+            </DockPanel>
+            <Button x:Name="ActionMacroButton" Margin="0,8,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Style="{StaticResource DropdownButtonStyle}" Click="ActionMacro_Click">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right" Text="&#xE70D;" FontFamily="{StaticResource IconFont}" FontSize="9"
+                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="ActionMacroText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+            </Button>
+            <TextBlock x:Name="ActionHintText" Margin="0,8,0,0" TextWrapping="Wrap" Style="{StaticResource CaptionStyle}" />
+
+            <!-- Cuántas veces -->
+            <DockPanel Margin="0,16,0,0">
+                <Border DockPanel.Dock="Right" Style="{StaticResource SegmentedContainerStyle}">
+                    <UniformGrid Columns="2">
+                        <RadioButton x:Name="OnceRadio" Content="{l:T WatchOneTime}" GroupName="WatchRepeat"
+                                     Style="{StaticResource CompactSegmentStyle}" />
+                        <RadioButton x:Name="EveryRadio" Content="{l:T WatchEveryTime}" GroupName="WatchRepeat" IsChecked="True"
+                                     Style="{StaticResource CompactSegmentStyle}" ToolTip="{l:T WatchEveryTip}" />
+                    </UniformGrid>
+                </Border>
+                <TextBlock Text="{l:T WatchHowOften}" Style="{StaticResource LabelStyle}" Margin="0" VerticalAlignment="Center" />
+            </DockPanel>
+
+            <TextBlock x:Name="ErrorText" Margin="2,10,0,0" Visibility="Collapsed" FontSize="12" TextWrapping="Wrap" Foreground="#D13438" />
+
+            <DockPanel Margin="0,18,0,0">
+                <Button x:Name="DeleteButton" DockPanel.Dock="Left" Content="{l:T Delete}" Style="{StaticResource SecondaryButtonStyle}"
+                        Click="Delete_Click" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="CancelButton" Content="{l:T Cancel}" MinWidth="90" IsCancel="True"
+                            Style="{StaticResource SecondaryButtonStyle}" Click="Cancel_Click" />
+                    <Button x:Name="OkButton" Content="{l:T Save}" MinWidth="90" Margin="8,0,0,0" IsDefault="True"
+                            Style="{StaticResource AccentButtonStyle}" Click="Ok_Click" />
+                </StackPanel>
+            </DockPanel>
+        </StackPanel>
+    </Border>
+</Window>

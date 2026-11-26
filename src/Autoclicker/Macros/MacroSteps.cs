@@ -3,7 +3,7 @@ using Autoclicker.Localization;
 
 namespace Autoclicker.Macros;
 
-public enum StepKind { Moves, Click, Drag, KeyPress, KeyDown, KeyUp, ButtonDown, ButtonUp, Wheel, Text }
+public enum StepKind { Moves, Click, Drag, KeyPress, KeyDown, KeyUp, ButtonDown, ButtonUp, Wheel, Text, WaitColor }
 
 /// <summary>
 /// Un paso del editor: un grupo de eventos que se entiende como una sola acción ("Clic izquierdo en
@@ -97,6 +97,10 @@ public static class MacroSteps
                 kind = StepKind.KeyUp;
                 return i + 1;
 
+            case MacroEventKind.WaitColor:
+                kind = StepKind.WaitColor;
+                return i + 1;
+
             default: // TypeChar
                 kind = StepKind.Text;
                 return While(ev, i, x => x.Kind == MacroEventKind.TypeChar);
@@ -180,6 +184,29 @@ public static class MacroSteps
         ],
     };
 
+    /// <summary>Esperar a que el punto tenga ese color (tolerancia 10), como mucho <paramref name="timeoutSeconds"/>.</summary>
+    public static MacroStep NewWaitColor(int x, int y, int color, int timeoutSeconds, long waitBefore) => new()
+    {
+        Kind = StepKind.WaitColor,
+        WaitBefore = waitBefore,
+        Events = [new MacroEvent(0, MacroEventKind.WaitColor, x, y, color & 0xFFFFFF, 10 | (Math.Max(1, timeoutSeconds) << 8))],
+    };
+
+    /// <summary>Cambia el punto (y el color a esperar) de un paso "Esperar a un color".</summary>
+    public static void SetWaitPoint(MacroStep step, int x, int y, int? color = null)
+    {
+        if (step.Kind != StepKind.WaitColor) return;
+        MacroEvent e = step.Events[0];
+        step.Events[0] = e with { X = x, Y = y, Data = color ?? e.Data };
+    }
+
+    public static void SetWaitTimeout(MacroStep step, int seconds)
+    {
+        if (step.Kind != StepKind.WaitColor) return;
+        MacroEvent e = step.Events[0];
+        step.Events[0] = e with { Flags = (e.Flags & 0xFF) | (Math.Max(1, Math.Min(3600, seconds)) << 8) };
+    }
+
     public static MacroStep NewText(string text, long waitBefore) => new()
     {
         Kind = StepKind.Text,
@@ -258,6 +285,7 @@ public static class MacroSteps
             StepKind.KeyUp => Strings.F("StepKeyUp", key),
             StepKind.ButtonDown => Strings.F("StepButtonDown", ButtonName(first.Data), first.X, first.Y),
             StepKind.ButtonUp => Strings.F("StepButtonUp", ButtonName(first.Data)),
+            StepKind.WaitColor => Strings.F("StepWaitColor", first.Data, first.X, first.Y, first.WaitTimeoutSeconds),
             StepKind.Wheel => Strings.F(first.Data < 0 ? "StepWheelDown" : first.Kind == MacroEventKind.HWheel ? "StepWheelRight" : "StepWheelUp",
                                         s.Events.Sum(e => Math.Abs(e.Data)) / 120),
             _ => Strings.F("StepText", TextOf(s)),
@@ -271,6 +299,7 @@ public static class MacroSteps
         StepKind.KeyPress or StepKind.KeyDown or StepKind.KeyUp => "",
         StepKind.Wheel => "",
         StepKind.Text => "",
+        StepKind.WaitColor => "",
         _ => "",
     };
 }

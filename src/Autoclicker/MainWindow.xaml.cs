@@ -96,6 +96,7 @@ public partial class MainWindow : Window
 
         InitPersistence();
         InitMacros();
+        InitWatch();
         InitHud();
     }
 
@@ -115,13 +116,14 @@ public partial class MainWindow : Window
         (MainPage, NavClicksButton),
         (MacrosPage, NavMacrosButton),
         (AntiAfkPage, NavAntiAfkButton),
+        (WatchPage, NavWatchButton),
         (SettingsPage, SettingsButton),
     ];
 
     private FrameworkElement CurrentPage => Sections.First(s => s.Page.Visibility == Visibility.Visible).Page;
 
     // Mientras se carga la ventana, "Clics" ya llega marcado antes de que existan las secciones.
-    private bool SectionsReady => MainPage != null && MacrosPage != null && AntiAfkPage != null && SettingsPage != null;
+    private bool SectionsReady => MainPage != null && MacrosPage != null && AntiAfkPage != null && WatchPage != null && SettingsPage != null;
 
     private void Nav_Checked(object sender, RoutedEventArgs e)
     {
@@ -161,6 +163,7 @@ public partial class MainWindow : Window
             double height = MainPage.ActualHeight;
             AntiAfkPage.MinHeight = height;
             MacrosPage.MinHeight = height;
+            WatchPage.MinHeight = height;
             SettingsScroll.MaxHeight = Math.Max(height, 400);
         }
 
@@ -211,6 +214,11 @@ public partial class MainWindow : Window
         var playKey = new Hotkey(_data.Prefs.MacroPlayVk, _data.Prefs.MacroPlayModifiers);
         if (!_playHotkeys.TrySet(playKey)) _hotkeyError ??= Strings.F("HotkeyTakenPick", playKey);
 
+        _watchHotkeys = new HotkeyManager(_hwnd, id: 5);
+        _watchHotkeys.Pressed += OnWatchHotkey;
+        var watchKey = new Hotkey(_data.Prefs.WatchVk, _data.Prefs.WatchModifiers);
+        if (!_watchHotkeys.TrySet(watchKey)) _hotkeyError ??= Strings.F("HotkeyTakenPick", watchKey);
+
         RebuildMacroHotkeys();
 
         _tray = new TrayIcon(_hwnd);
@@ -248,6 +256,8 @@ public partial class MainWindow : Window
         CloseHud();
         _hotkeys?.Dispose();
         _recordHotkeys?.Dispose();
+        _watchHotkeys?.Dispose();
+        DisposeWatch();
         _playHotkeys?.Dispose();
         _tray?.Dispose();
         ThemeManager.ThemeChanged -= OnThemeChanged;
@@ -279,7 +289,8 @@ public partial class MainWindow : Window
         }
 
         if (_hotkeys?.HandleMessage(msg, wParam) == true || _recordHotkeys?.HandleMessage(msg, wParam) == true
-            || _playHotkeys?.HandleMessage(msg, wParam) == true || HandleMacroHotkeyMessage(msg, wParam)
+            || _playHotkeys?.HandleMessage(msg, wParam) == true || _watchHotkeys?.HandleMessage(msg, wParam) == true
+            || HandleMacroHotkeyMessage(msg, wParam)
             || _tray?.HandleMessage(msg, lParam) == true)
         {
             handled = true;
@@ -613,10 +624,11 @@ public partial class MainWindow : Window
 
     private HotkeyManager? ManagerFor(ToggleButton? button) =>
         button == RecordHotkeyButton ? _recordHotkeys : button == PlayHotkeyButton ? _playHotkeys
+        : button == WatchHotkeyButton ? _watchHotkeys
         : IsActionKeyButton(button) ? null : _hotkeys;
 
     private IEnumerable<HotkeyManager> AllHotkeys =>
-        new[] { _hotkeys, _recordHotkeys, _playHotkeys }.Where(h => h != null)!;
+        new[] { _hotkeys, _recordHotkeys, _playHotkeys, _watchHotkeys }.Where(h => h != null)!;
 
     private void BeginHotkeyCapture(ToggleButton button)
     {
@@ -683,6 +695,8 @@ public partial class MainWindow : Window
         PlayHotkeyButton.Content = _playHotkeys?.Current.ToString() ?? "F8";
         Theme.Ui.SetKeyText(RecordMacroButton, RecordHotkeyButton.Content.ToString()!);
         Theme.Ui.SetKeyText(PlayMacroButton, PlayHotkeyButton.Content.ToString()!);
+        WatchHotkeyButton.Content = _watchHotkeys?.Current.ToString() ?? "F10";
+        Theme.Ui.SetKeyText(WatchToggle, WatchHotkeyButton.Content.ToString()!);
         HotkeyNoteText.Text = _hotkeyError ?? Strings.T("HotkeyWorksHidden");
         HotkeyNoteText.Foreground = (System.Windows.Media.Brush)FindResource(_hotkeyError != null ? "AccentBrush" : "TextSecondaryBrush");
     }
@@ -777,7 +791,8 @@ public partial class MainWindow : Window
     {
         if (ExperimentalSwitch.IsChecked == true) return;
         AntiAfkSwitch.IsChecked = false;
-        if (SectionsReady && CurrentPage == AntiAfkPage) ShowPage(MainPage);
+        if (WatchToggle != null) WatchToggle.IsChecked = false;
+        if (SectionsReady && (CurrentPage == AntiAfkPage || CurrentPage == WatchPage)) ShowPage(MainPage);
     }
 
     // ================= Ajustes: fondo y "Acerca de" =================

@@ -89,6 +89,10 @@ public sealed class GlobalPrefs
     public bool AntiAfkUseKey { get; set; }
     public int AntiAfkKeyVk { get; set; } = 0x20; // Espacio
 
+    /// <summary>Atajo de "Vigilar" (2.4, experimental).</summary>
+    public int WatchVk { get; set; } = 0x79; // F10
+    public uint WatchModifiers { get; set; }
+
     internal Dictionary<string, object?> ToJson() => new()
     {
         ["HotkeyVk"] = HotkeyVk,
@@ -123,6 +127,8 @@ public sealed class GlobalPrefs
         ["AntiAfkY"] = AntiAfkY,
         ["AntiAfkUseKey"] = AntiAfkUseKey,
         ["AntiAfkKeyVk"] = AntiAfkKeyVk,
+        ["WatchVk"] = WatchVk,
+        ["WatchModifiers"] = WatchModifiers,
     };
 
     internal static GlobalPrefs FromJson(JsonObj j)
@@ -163,6 +169,8 @@ public sealed class GlobalPrefs
             AntiAfkY = j.Int("AntiAfkY", 0),
             AntiAfkUseKey = j.Bool("AntiAfkUseKey", false),
             AntiAfkKeyVk = j.Int("AntiAfkKeyVk", d.AntiAfkKeyVk),
+            WatchVk = j.Int("WatchVk", d.WatchVk),
+            WatchModifiers = (uint)j.Int("WatchModifiers", 0),
         };
     }
 }
@@ -200,6 +208,9 @@ public sealed class ProfileData
     public bool LockToWindow { get; set; }
     public bool RestoreCursor { get; set; }
 
+    /// <summary>Reglas de "Vigilar" (2.4).</summary>
+    public List<Watch.WatchRule> WatchRules { get; set; } = [];
+
     internal Dictionary<string, object?> ToJson() => new()
     {
         ["Interval"] = Interval,
@@ -224,6 +235,7 @@ public sealed class ProfileData
         ["StartDelaySeconds"] = StartDelaySeconds,
         ["LockToWindow"] = LockToWindow,
         ["RestoreCursor"] = RestoreCursor,
+        ["WatchRules"] = WatchRules.Select(r => (object?)r.ToJson()).ToList(),
     };
 
     internal static ProfileData FromJson(JsonObj j)
@@ -253,6 +265,7 @@ public sealed class ProfileData
             StartDelaySeconds = j.Int("StartDelaySeconds", 0),
             LockToWindow = j.Bool("LockToWindow", false),
             RestoreCursor = j.Bool("RestoreCursor", false),
+            WatchRules = j.Array("WatchRules").Select(Watch.WatchRule.FromJson).ToList(),
         };
     }
 }

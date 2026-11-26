@@ -50,7 +50,8 @@ public partial class MainWindow
         if (e.OriginalSource == StartButton || e.OriginalSource == HotkeyButton
             || e.OriginalSource == SettingsButton || e.OriginalSource == NavClicksButton || e.OriginalSource == NavAntiAfkButton
             || e.OriginalSource == NavMacrosButton || e.OriginalSource == RecordMacroButton || e.OriginalSource == PlayMacroButton
-            || e.OriginalSource == RecordHotkeyButton || e.OriginalSource == PlayHotkeyButton) return;
+            || e.OriginalSource == RecordHotkeyButton || e.OriginalSource == PlayHotkeyButton
+            || e.OriginalSource == NavWatchButton || e.OriginalSource == WatchToggle || e.OriginalSource == WatchHotkeyButton) return;
         ScheduleSave();
     }
 
@@ -158,6 +159,8 @@ public partial class MainWindow
         MacroRecordModifiers = _recordHotkeys?.Current.Modifiers ?? _data.Prefs.MacroRecordModifiers,
         MacroPlayVk = _playHotkeys?.Current.VirtualKey ?? _data.Prefs.MacroPlayVk,
         MacroPlayModifiers = _playHotkeys?.Current.Modifiers ?? _data.Prefs.MacroPlayModifiers,
+        WatchVk = _watchHotkeys?.Current.VirtualKey ?? _data.Prefs.WatchVk,
+        WatchModifiers = _watchHotkeys?.Current.Modifiers ?? _data.Prefs.WatchModifiers,
         MacroName = _macro?.Name ?? _data.Prefs.MacroName,
         MacroRepeat = MacroCountRadio.IsChecked == true ? Macros.MacroRepeat.Count
                     : MacroForeverRadio.IsChecked == true ? Macros.MacroRepeat.Forever
@@ -247,6 +250,7 @@ public partial class MainWindow
         DelayBox.Text = p.StartDelaySeconds.ToString();
         LockWindowSwitch.IsChecked = p.LockToWindow;
         RestoreCursorSwitch.IsChecked = p.RestoreCursor;
+        LoadWatchRules(p.WatchRules);
 
         // Primero los puntos, luego el modo (que decide si se ven).
         _markers.Load((p.Points ?? []).Select(d => new MarkerPoint
@@ -311,6 +315,7 @@ public partial class MainWindow
         StartDelaySeconds = (int)Number(DelayBox),
         LockToWindow = LockWindowSwitch.IsChecked == true,
         RestoreCursor = RestoreCursorSwitch.IsChecked == true,
+        WatchRules = CaptureWatchRules(),
     };
 
     // ================= Menú de perfiles =================

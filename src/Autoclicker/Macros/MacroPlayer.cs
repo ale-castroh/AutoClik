@@ -92,6 +92,14 @@ public sealed unsafe class MacroPlayer : IDisposable
                     if (!WaitUntil(target, timer, handles, freq)) return; // se pidió parar
                     if (Stopwatch.GetTimestamp() >= deadline) { completed = true; return; }
                     Interlocked.Exchange(ref _position, e.Micros);
+                    if (e.Kind == MacroEventKind.WaitColor)
+                    {
+                        // Esperar a un color: el resto de la vuelta se retrasa lo que haya hecho falta esperar
+                        long waited = WaitForColor(e);
+                        if (waited < 0) return; // se pidió parar
+                        start += waited;
+                        continue;
+                    }
                     Send(e, pressedKeys, pressedButtons);
                 }
                 ReleaseAll(pressedKeys, pressedButtons);
@@ -109,6 +117,25 @@ public sealed unsafe class MacroPlayer : IDisposable
             lock (_gate) _thread = null;
             Finished?.Invoke(completed && LastError == null);
         }
+    }
+
+    /// <summary>
+    /// Mira el punto cada 50 ms hasta que tenga el color (o pase el tiempo máximo). Devuelve cuánto se
+    /// esperó, en ticks de Stopwatch, o -1 si se pidió parar.
+    /// </summary>
+    private long WaitForColor(MacroEvent e)
+    {
+        long begin = Stopwatch.GetTimestamp();
+        long limit = begin + Math.Max(1, e.WaitTimeoutSeconds) * Stopwatch.Frequency;
+        int maxDiff = Watch.ScreenCapture.ChannelTolerance(e.WaitTolerance);
+        while (true)
+        {
+            if (_stopRequested) return -1;
+            if (Watch.ScreenCapture.Near(Watch.ScreenCapture.PixelAt(e.X, e.Y), e.Data, maxDiff)) break;
+            if (Stopwatch.GetTimestamp() >= limit) break;
+            if (_stopEvent.WaitOne(50)) return -1;
+        }
+        return Stopwatch.GetTimestamp() - begin;
     }
 
     private bool WaitUntil(long target, HighResTimer timer, WaitHandle[] handles, long freq)

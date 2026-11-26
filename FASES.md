@@ -102,6 +102,26 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 2.4.0 — Vigilar la pantalla ✅
+- **Vigilar** (experimental: sección nueva en la barra lateral, solo con Ajustes → Experimental; atajo F10,
+  configurable en Ajustes → Atajo). Reglas "cuando aparezca esto, haz aquello", guardadas en el perfil:
+  - Qué vigilar: un **color en un punto** (se elige con la cruz y se guarda el color que tiene) o una
+    **imagen** recortada arrastrando sobre la pantalla (`Views/RegionPicker`; PNG en `images/`), buscada en
+    toda la pantalla o en una zona. Tolerancia 0-100 por canal; en imágenes, hasta un 3 % de píxeles distintos.
+  - Qué hacer: clic encima (el centro de la imagen o el punto), clic en otro punto, pulsar una tecla,
+    iniciar los clics, reproducir una macro o parar todo. Una vez o cada vez.
+  - Salta al **aparecer** (no estaba en la revisión anterior y ahora sí): no repite mientras siga a la vista.
+  - `Watch/ScreenCapture.cs` (BitBlt del escritorio virtual, píxeles físicos), `Watch/Watcher.cs` (hilo,
+    ~5 revisiones por segundo, una captura completa por revisión), `Watch/WatchRule.cs`. Buscar una imagen en
+    3 monitores (5360×1440) tarda ~10-30 ms más ~40 ms de captura (filtro por el píxel central).
+  - Los juegos a pantalla completa "exclusiva" se ven negros; en ventana o sin bordes funciona.
+- **Esperar a un color** en macros (editor → Insertar → "Esperar a un color"): evento `WaitColor`; el
+  reproductor mira el punto cada 50 ms hasta que tiene el color o pasa el máximo (30 s por defecto, editable),
+  y retrasa el resto de la vuelta lo que haya esperado. Sigue la ventana si la macro es relativa.
+- Pruebas: nueva `tests/ui/vigilar.ps1` (regla de color y de imagen sobre la diana, que ahora dibuja un
+  cuadrado amarillo; no repite; F10; esperar a un color que está y a uno que no llega); `clics-reales.ps1`
+  abre "Nueva regla" y la cancela con el ratón de verdad.
+
 ## Versión 2.3.0 — Editor de macros ✅
 - **Editor** (`Views/MacroEditor`, menú de la macro → "Editar…"): ventana propia; la principal queda
   desactivada mientras está abierto. La macro se ve como **pasos** (`Macros/MacroSteps.cs`): movimientos

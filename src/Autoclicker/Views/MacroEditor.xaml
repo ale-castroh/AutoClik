@@ -254,6 +254,21 @@
                                 </UniformGrid>
                             </DockPanel>
 
+                            <DockPanel x:Name="ColorRow" Style="{StaticResource FieldRowStyle}">
+                                <TextBlock Text="{l:T EditorColor}" Style="{StaticResource FieldLabelStyle}" />
+                                <Border x:Name="WaitColorSwatch" Width="22" Height="22" CornerRadius="4" BorderThickness="1"
+                                        BorderBrush="{DynamicResource ControlStrongBorderBrush}" />
+                                <TextBlock x:Name="WaitColorText" Margin="8,0,0,0" VerticalAlignment="Center"
+                                           FontFamily="{StaticResource NumberFont}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </DockPanel>
+
+                            <DockPanel x:Name="TimeoutRow" Style="{StaticResource FieldRowStyle}">
+                                <TextBlock Text="{l:T EditorTimeout}" Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Text="s" Style="{StaticResource UnitStyle}" DockPanel.Dock="Right" />
+                                <TextBox x:Name="TimeoutBox" Style="{StaticResource SmallFieldStyle}" Width="NaN" MaxLength="4"
+                                         TextChanged="Field_TextChanged" />
+                            </DockPanel>
+
                             <StackPanel x:Name="TextRow" Margin="0,0,0,10">
                                 <TextBlock Text="{l:T EditorText}" Style="{StaticResource FieldLabelStyle}" Margin="0,0,0,6" />
                                 <TextBox x:Name="StepTextBox" Style="{StaticResource FieldStyle}" FontFamily="{StaticResource UiFont}"

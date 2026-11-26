@@ -4,8 +4,12 @@ using Autoclicker.Persistence;
 
 namespace Autoclicker.Macros;
 
-/// <summary>TypeChar (2.3): escribe el carácter Data tal cual (texto insertado en el editor).</summary>
-public enum MacroEventKind { Move, Down, Up, Wheel, HWheel, KeyDown, KeyUp, TypeChar }
+/// <summary>
+/// TypeChar (2.3): escribe el carácter Data tal cual (texto insertado en el editor).
+/// WaitColor (2.4): espera a que el punto X, Y tenga el color Data (0xRRGGBB); Flags = tolerancia
+/// (0-100) + segundos máximos × 256.
+/// </summary>
+public enum MacroEventKind { Move, Down, Up, Wheel, HWheel, KeyDown, KeyUp, TypeChar, WaitColor }
 
 public enum MacroButton { Left, Right, Middle, X1, X2 }
 
@@ -20,6 +24,12 @@ public enum MacroRecordMode { All, Mouse, Keys }
 public readonly record struct MacroEvent(long Micros, MacroEventKind Kind, int X, int Y, int Data, int Flags)
 {
     public bool IsExtendedKey => (Flags & 1) != 0;
+
+    /// <summary>WaitColor: tolerancia 0-100.</summary>
+    public int WaitTolerance => Flags & 0xFF;
+
+    /// <summary>WaitColor: segundos como mucho antes de seguir.</summary>
+    public int WaitTimeoutSeconds => Flags >> 8;
 }
 
 /// <summary>Una macro grabada: nombre, fecha y la lista de eventos con sus tiempos.</summary>
@@ -65,7 +75,7 @@ public sealed class Macro
         copy.HotkeyVk = HotkeyVk;
         copy.HotkeyModifiers = HotkeyModifiers;
         if (dx != 0 || dy != 0)
-            copy.Events = Events.Select(e => e.Kind is MacroEventKind.Move or MacroEventKind.Down or MacroEventKind.Up
+            copy.Events = Events.Select(e => e.Kind is MacroEventKind.Move or MacroEventKind.Down or MacroEventKind.Up or MacroEventKind.WaitColor
                 ? e with { X = e.X + dx, Y = e.Y + dy } : e).ToList();
         return copy;
     }
