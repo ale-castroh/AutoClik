@@ -57,7 +57,7 @@ public static unsafe class EmergencyCornerWatcher
         return CallNextHookEx(0, code, wParam, lParam);
     }
 
-    private static bool IsInCorner(POINT p)
+    internal static bool IsInCorner(POINT p)
     {
         nint monitor = MonitorFromPoint(p, MONITOR_DEFAULTTONEAREST);
         var mi = new MONITORINFO { cbSize = (uint)sizeof(MONITORINFO) };

@@ -119,6 +119,8 @@ public partial class MainWindow
         }).IsChecked = true;
 
         ExperimentalSwitch.IsChecked = p.Experimental;
+        ApplyDwellPrefs(p);
+        ApplyUpdatePrefs(p);
         AntiAfkSwitch.IsChecked = p.Experimental && p.AntiAfkEnabled;
 
         // "Iniciar con Windows" no va en settings.json: lo que manda es el registro.
@@ -178,6 +180,16 @@ public partial class MainWindow
         AntiAfkY = _antiAfk.Y,
         AntiAfkUseKey = AfkKeyRadio.IsChecked == true,
         AntiAfkKeyVk = _afkKeyVk,
+        DwellEnabled = DwellSwitch.IsChecked == true,
+        DwellMs = _dwell.DelayMs,
+        DwellClick = _dwell.Click,
+        DwellTolerance = _dwell.TolerancePx,
+        DwellRepeat = DwellForeverRadio.IsChecked == true,
+        DwellVk = _dwellKey?.VirtualKey,
+        DwellModifiers = _dwellKey?.Modifiers ?? 0,
+        UpdateCheck = UpdateSwitch.IsChecked == true,
+        UpdateLastCheck = _updateLastCheck?.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
+        UpdateAvailable = _updateAvailable?.ToString(3),
     };
 
     private bool _syncingAutostart;

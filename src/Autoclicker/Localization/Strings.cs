@@ -566,6 +566,37 @@ public static class Strings
         ["ProfileImported"] = ("Perfil «{0}» importado", "Profile \"{0}\" imported"),
         ["ProfileFileError"] = ("No se pudo leer o guardar el archivo del perfil", "Couldn't read or save the profile file"),
 
+        // ---- Clic por permanencia (2.7) ----
+        ["Accessibility"] = ("Accesibilidad", "Accessibility"),
+        ["Dwell"] = ("Clic por permanencia", "Dwell click"),
+        ["DwellHint"] = ("Clica al dejar el ratón quieto (apagado por defecto)", "Clicks when you hold the mouse still (off by default)"),
+        ["DwellWait"] = ("Esperar", "Wait"),
+        ["DwellWaitTip"] = ("Tiempo quieto antes de clicar, de 0,3 a 5 segundos", "Time held still before clicking, 0.3 to 5 seconds"),
+        ["DwellClickKind"] = ("Clic", "Click"),
+        ["DwellOnceTip"] = ("Un solo clic cada vez que dejas el ratón quieto", "A single click each time you hold the mouse still"),
+        ["DwellForeverTip"] = ("Clica sin parar, con el intervalo de Clics, hasta que muevas el ratón", "Clicks nonstop, at the Clicks interval, until you move the mouse"),
+        ["DwellTolerance"] = ("Ignorar temblor", "Ignore shaking"),
+        ["DwellToleranceTip"] = ("Los movimientos más pequeños que esto no cuentan como mover el ratón", "Movements smaller than this don't count as moving the mouse"),
+        ["DwellHotkey"] = ("Atajo para activarlo", "Hotkey to toggle it"),
+        ["DwellHotkeyTip"] = ("Enciende o apaga el clic por permanencia; también desde el icono de la bandeja", "Turns dwell click on or off; also from the tray icon"),
+        ["DwellHotkeyTitle"] = ("Atajo del clic por permanencia", "Dwell click hotkey"),
+        ["NoHotkey"] = ("Ninguno", "None"),
+        ["DwellStoppedCorner"] = ("Clic por permanencia apagado (esquina)", "Dwell click turned off (corner)"),
+
+        // ---- Actualizaciones (2.7) ----
+        ["UpdateCheck"] = ("Buscar actualizaciones", "Check for updates"),
+        ["UpdateCheckHint"] = ("Una vez al día, solo pregunta a GitHub el número de la última versión. Nunca descarga ni instala nada",
+                               "Once a day, only asks GitHub for the latest version number. Never downloads or installs anything"),
+        ["UpdateCheckNow"] = ("Buscar ahora", "Check now"),
+        ["UpdateChecking"] = ("Buscando…", "Checking…"),
+        ["UpdateFailed"] = ("No se pudo comprobar (¿sin internet?)", "Couldn't check (no internet?)"),
+        ["UpdateNever"] = ("Última comprobación: nunca", "Last checked: never"),
+        ["UpdateLast"] = ("Última comprobación: {0}", "Last checked: {0}"),
+        ["UpdateUpToDate"] = ("tienes la última versión", "you're up to date"),
+        ["UpdateAvailable"] = ("Hay una versión nueva: {0}", "A new version is available: {0}"),
+        ["UpdateOpen"] = ("Ver en GitHub", "View on GitHub"),
+        ["UpdateOpenHint"] = ("Se abre la página de GitHub; tú decides si la descargas", "Opens the GitHub page; you decide whether to download it"),
+
         // ---- Perfiles ----
         ["DefaultProfile"] = ("Predeterminado", "Default"),
         ["ProfileTip"] = ("Perfil: {0} · clic para cambiar", "Profile: {0} · click to switch"),

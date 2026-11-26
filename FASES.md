@@ -102,6 +102,30 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 2.7.0 — Clic por permanencia y buscar actualizaciones ✅
+- **Clic por permanencia** (accesibilidad; `Input/DwellClicker.cs`, `Views/DwellRing`, `MainWindow.Dwell.cs`, Ajustes →
+  Accesibilidad entre Clics y Estadísticas). Cada 25 ms se mira el cursor: si se movió más que "Ignorar temblor" (6 px),
+  queda armado; quieto el tiempo elegido (0,8 s, de 0,3 a 5) clica una vez con SendInput (izquierdo, derecho o doble) y se
+  desarma hasta que se mueva. Al encenderlo, o con un botón pulsado (arrastrar), hay que moverse antes. El círculo
+  (ventana traspasable WS_EX_TRANSPARENT, sin foco) aparece a los 150 ms. Se pausa con el autoclicker, grabando,
+  reproduciendo, eligiendo un punto o capturando un atajo; la esquina de emergencia lo apaga. Atajo propio (id 6,
+  ninguno por defecto, KeyDialog con "Quitar") y casilla en el menú de la bandeja. Se guarda en las preferencias.
+  Apagado por defecto. A petición del usuario, **Repetir: Una vez / Sin fin** ("Una vez" por defecto): en "Sin fin",
+  al llenarse el círculo arranca el autoclicker en el cursor (`_dwellRunSettings`: intervalo y jitter de Clics, el
+  botón y tipo de la permanencia, sin límites ni puntos) y se para al moverse más que el temblor; F6 y la esquina
+  también lo paran. No cancela lo programado y sus clics cuentan en las estadísticas.
+- **Buscar actualizaciones** (`Interop/UpdateChecker.cs`, `MainWindow.Updates.cs`, Ajustes → Acerca de). Apagado por
+  defecto: apagado no se conecta a nada. Encendido, a los 8 s de abrir y cada hora mira si toca (una vez al día).
+  Seguridad: GET HTTPS solo a api.github.com/repos/ale-castroh/AutoClik/releases/latest (TLS 1.2, sin redirecciones,
+  sin credenciales ni cookies, agente "AutoClik/x.y.z", 10 s, como mucho 512 KB); de la respuesta solo se usa
+  `tag_name` si es `v1.2.3` (y se ignoran draft/prerelease); el botón "Ver en GitHub" abre una dirección FIJA del
+  código (…/AutoClik/releases), nunca la de la respuesta. Nunca descarga ni instala. Aviso en Acerca de, puntito de
+  acento en el engranaje (Tag "Update") y globo de la bandeja la primera vez que se ve una versión.
+  Pruebas sin internet: `--update-test=<archivo.json>`.
+- Pruebas: nueva `tests/ui/permanencia-actualizaciones.ps1` (clics de la permanencia sobre la diana con PidAt, no repite,
+  temblor, derecho, doble, apagado, esquina; respuestas nueva/igual/maliciosas/enorme/prerelease, apagado no comprueba,
+  "Buscar ahora"); `clics-reales.ps1` pulsa el tipo de clic de la permanencia con el ratón de verdad (el interruptor no).
+
 ## Versión 2.6.0 — Estadísticas, modo portátil y línea de comandos ✅
 - **Estadísticas** (`Persistence/UsageStats.cs`, `MainWindow.Stats.cs`): `stats.json` junto a settings.json, solo local.
   Hoy (se pone a cero al cambiar el día) y total: clics, teclas, macros reproducidas, tiempo y sesión más larga.

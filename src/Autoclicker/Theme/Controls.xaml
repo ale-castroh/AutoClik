@@ -157,6 +157,11 @@
                         <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="True">
                             <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
                         </DataTrigger>
+                        <!-- Ajustes con una versión nueva disponible (2.7): puntito del color de acento -->
+                        <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="Update">
+                            <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource AccentBrush}" />
+                        </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>

@@ -93,6 +93,20 @@ public sealed class GlobalPrefs
     public int WatchVk { get; set; } = 0x79; // F10
     public uint WatchModifiers { get; set; }
 
+    /// <summary>Clic por permanencia (2.7): encendido, espera, clic, temblor ignorado y atajo (null = ninguno).</summary>
+    public bool DwellEnabled { get; set; }
+    public int DwellMs { get; set; } = 800;
+    public Input.DwellClick DwellClick { get; set; } = Input.DwellClick.Left;
+    public int DwellTolerance { get; set; } = 6;
+    public bool DwellRepeat { get; set; }  // false = un clic; true = clicar sin parar hasta mover el ratón
+    public int? DwellVk { get; set; }
+    public uint DwellModifiers { get; set; }
+
+    /// <summary>Buscar actualizaciones (2.7): apagado por defecto. Última comprobación y versión nueva vista.</summary>
+    public bool UpdateCheck { get; set; }
+    public string? UpdateLastCheck { get; set; }
+    public string? UpdateAvailable { get; set; }
+
     internal Dictionary<string, object?> ToJson() => new()
     {
         ["HotkeyVk"] = HotkeyVk,
@@ -129,6 +143,16 @@ public sealed class GlobalPrefs
         ["AntiAfkKeyVk"] = AntiAfkKeyVk,
         ["WatchVk"] = WatchVk,
         ["WatchModifiers"] = WatchModifiers,
+        ["DwellEnabled"] = DwellEnabled,
+        ["DwellMs"] = DwellMs,
+        ["DwellClick"] = DwellClick,
+        ["DwellTolerance"] = DwellTolerance,
+        ["DwellRepeat"] = DwellRepeat,
+        ["DwellVk"] = DwellVk,
+        ["DwellModifiers"] = DwellModifiers,
+        ["UpdateCheck"] = UpdateCheck,
+        ["UpdateLastCheck"] = UpdateLastCheck,
+        ["UpdateAvailable"] = UpdateAvailable,
     };
 
     internal static GlobalPrefs FromJson(JsonObj j)
@@ -171,6 +195,16 @@ public sealed class GlobalPrefs
             AntiAfkKeyVk = j.Int("AntiAfkKeyVk", d.AntiAfkKeyVk),
             WatchVk = j.Int("WatchVk", d.WatchVk),
             WatchModifiers = (uint)j.Int("WatchModifiers", 0),
+            DwellEnabled = j.Bool("DwellEnabled", false),
+            DwellMs = Math.Max(300, Math.Min(5000, j.Int("DwellMs", d.DwellMs))),
+            DwellClick = j.Enum("DwellClick", d.DwellClick),
+            DwellTolerance = Math.Max(1, Math.Min(50, j.Int("DwellTolerance", d.DwellTolerance))),
+            DwellRepeat = j.Bool("DwellRepeat", false),
+            DwellVk = j.IntOrNull("DwellVk"),
+            DwellModifiers = (uint)j.Int("DwellModifiers", 0),
+            UpdateCheck = j.Bool("UpdateCheck", false),
+            UpdateLastCheck = j.Str("UpdateLastCheck"),
+            UpdateAvailable = j.Str("UpdateAvailable"),
         };
     }
 }

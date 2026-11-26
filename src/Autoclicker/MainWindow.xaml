@@ -22,6 +22,7 @@
         <!-- Menú del icono de la bandeja -->
         <ContextMenu x:Key="TrayMenu">
             <MenuItem Header="{l:T TrayStart}" Icon="&#xE768;" Click="TrayStart_Click" />
+            <MenuItem Header="{l:T Dwell}" IsCheckable="True" Click="TrayDwell_Click" />
             <MenuItem Header="{l:T TrayShow}" Icon="&#xE8A7;" Click="TrayShow_Click" />
             <Separator />
             <MenuItem Header="{l:T TrayExit}" Icon="&#xE7E8;" Click="TrayExit_Click" />
@@ -804,6 +805,66 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Accesibilidad (2.7): clic por permanencia -->
+                <TextBlock Text="{l:T Accessibility}" Style="{StaticResource GroupLabelStyle}" />
+                <Border Style="{StaticResource ListCardStyle}">
+                    <StackPanel>
+                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                            <CheckBox x:Name="DwellSwitch" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                      Style="{StaticResource ToggleSwitchStyle}"
+                                      Checked="Dwell_Changed" Unchecked="Dwell_Changed" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{l:T Dwell}" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock Text="{l:T DwellHint}" Style="{StaticResource RowHintStyle}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <TextBlock DockPanel.Dock="Right" Text="s" Style="{StaticResource UnitStyle}" />
+                            <TextBox x:Name="DwellDelayBox" DockPanel.Dock="Right" Text="0,8" MaxLength="4" VerticalAlignment="Center" Style="{StaticResource SmallFieldStyle}" />
+                            <TextBlock Text="{l:T DwellWait}" Style="{StaticResource RowTitleStyle}" ToolTip="{l:T DwellWaitTip}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <Border DockPanel.Dock="Right" VerticalAlignment="Center" Style="{StaticResource SegmentedContainerStyle}">
+                                <UniformGrid Columns="3">
+                                    <RadioButton x:Name="DwellLeftRadio" Content="{l:T Left}" GroupName="DwellClick" IsChecked="True" Style="{StaticResource CompactSegmentStyle}"
+                                                 Checked="DwellClick_Changed" />
+                                    <RadioButton x:Name="DwellRightRadio" Content="{l:T Right}" GroupName="DwellClick" Style="{StaticResource CompactSegmentStyle}"
+                                                 Checked="DwellClick_Changed" />
+                                    <RadioButton x:Name="DwellDoubleRadio" Content="{l:T Double}" GroupName="DwellClick" Style="{StaticResource CompactSegmentStyle}"
+                                                 Checked="DwellClick_Changed" />
+                                </UniformGrid>
+                            </Border>
+                            <TextBlock Text="{l:T DwellClickKind}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <Border DockPanel.Dock="Right" VerticalAlignment="Center" Style="{StaticResource SegmentedContainerStyle}">
+                                <UniformGrid Columns="2">
+                                    <RadioButton x:Name="DwellOnceRadio" Content="{l:T MacroOnce}" GroupName="DwellRepeat" IsChecked="True" Style="{StaticResource CompactSegmentStyle}"
+                                                 Checked="DwellClick_Changed" ToolTip="{l:T DwellOnceTip}" />
+                                    <RadioButton x:Name="DwellForeverRadio" Content="{l:T Forever}" GroupName="DwellRepeat" Style="{StaticResource CompactSegmentStyle}"
+                                                 Checked="DwellClick_Changed" ToolTip="{l:T DwellForeverTip}" />
+                                </UniformGrid>
+                            </Border>
+                            <TextBlock Text="{l:T Repeat}" Style="{StaticResource RowTitleStyle}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <TextBlock DockPanel.Dock="Right" Text="px" Style="{StaticResource UnitStyle}" />
+                            <TextBox x:Name="DwellToleranceBox" DockPanel.Dock="Right" Text="6" MaxLength="2" VerticalAlignment="Center" Style="{StaticResource SmallFieldStyle}" />
+                            <TextBlock Text="{l:T DwellTolerance}" Style="{StaticResource RowTitleStyle}" ToolTip="{l:T DwellToleranceTip}" />
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <Button x:Name="DwellHotkeyButton" DockPanel.Dock="Right" VerticalAlignment="Center" Content="-"
+                                    Style="{StaticResource SecondaryButtonStyle}" Click="DwellHotkey_Click" />
+                            <TextBlock Text="{l:T DwellHotkey}" Style="{StaticResource RowTitleStyle}" ToolTip="{l:T DwellHotkeyTip}" />
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
                 <!-- Estadísticas (2.6): solo en este PC -->
                 <DockPanel>
                     <Border DockPanel.Dock="Right" VerticalAlignment="Bottom" Margin="0,0,0,6" Style="{StaticResource SegmentedContainerStyle}">
@@ -962,6 +1023,38 @@
                             <TextBlock Text="{l:T AboutHint}" Style="{StaticResource RowHintStyle}" />
                         </StackPanel>
                     </DockPanel>
+                </Border>
+                <!-- Buscar actualizaciones (2.7): apagado por defecto; nunca descarga ni instala nada -->
+                <Border Style="{StaticResource ListCardStyle}" Margin="0,8,0,0">
+                    <StackPanel>
+                        <DockPanel Style="{StaticResource ListRowStyle}" MinHeight="56">
+                            <CheckBox x:Name="UpdateSwitch" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                      Style="{StaticResource ToggleSwitchStyle}"
+                                      Checked="Update_Changed" Unchecked="Update_Changed" />
+                            <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                <TextBlock Text="{l:T UpdateCheck}" Style="{StaticResource RowTitleStyle}" />
+                                <TextBlock Text="{l:T UpdateCheckHint}" Style="{StaticResource RowHintStyle}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+                        <Border Style="{StaticResource ListDividerStyle}" />
+                        <DockPanel Style="{StaticResource ListRowStyle}">
+                            <Button x:Name="CheckUpdatesButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                    Content="{l:T UpdateCheckNow}" Style="{StaticResource SecondaryButtonStyle}" Click="CheckUpdatesNow_Click" />
+                            <TextBlock x:Name="UpdateStatusText" Text="" VerticalAlignment="Center" Margin="0,0,12,0"
+                                       TextWrapping="Wrap" Style="{StaticResource RowHintStyle}" />
+                        </DockPanel>
+                        <Border x:Name="UpdateBanner" Margin="12,0,12,12" Padding="12,10" CornerRadius="6"
+                                Background="{DynamicResource SubtleHoverBrush}" Visibility="Collapsed">
+                            <DockPanel>
+                                <Button x:Name="OpenReleasesButton" DockPanel.Dock="Right" VerticalAlignment="Center"
+                                        Content="{l:T UpdateOpen}" Style="{StaticResource SecondaryButtonStyle}" Click="OpenReleases_Click" />
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+                                    <TextBlock x:Name="UpdateBannerText" Text="" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}" />
+                                    <TextBlock Text="{l:T UpdateOpenHint}" Style="{StaticResource RowHintStyle}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </StackPanel>
                 </Border>
             </StackPanel>
             </ScrollViewer>

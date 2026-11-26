@@ -51,6 +51,11 @@ public partial class App : Application
             {
                 Scheduling.Power.CountdownSeconds = Math.Max(1, countdown);
             }
+            // --update-test=<archivo.json>: "Buscar actualizaciones" lee ese archivo en vez de preguntar a GitHub (pruebas).
+            else if (arg.StartsWith("--update-test=", StringComparison.OrdinalIgnoreCase))
+            {
+                Interop.UpdateChecker.TestFile = arg.Substring("--update-test=".Length).Trim('"');
+            }
             // --data=<carpeta> guarda la configuración en otra carpeta (pruebas).
             else if (arg.StartsWith("--data=", StringComparison.OrdinalIgnoreCase))
             {
@@ -140,7 +145,7 @@ public partial class App : Application
     private static readonly string[] StartupPrefixes =
     [
         "--theme=", "--lang=", "--data=", "--record-injected", "--antiafk-seconds=", "--schedule-seconds",
-        "--power-test", "--countdown-seconds=",
+        "--power-test", "--countdown-seconds=", "--update-test=",
     ];
 
     /// <summary>Abre una copia nueva (que espera a que esta se cierre) con los mismos argumentos de arranque.</summary>

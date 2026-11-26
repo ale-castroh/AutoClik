@@ -72,6 +72,11 @@ Click "HoldModeRadio"; $hold = Sel 'HoldModeRadio'
 Click "ToggleModeRadio"
 foreach ($i in 1..8) { [R]::mouse_event(0x800, 0, 0, [uint32]4294967176, [UIntPtr]::Zero); Start-Sleep -Milliseconds 40 }  # rueda abajo (-120)
 Start-Sleep -Milliseconds 400
+# Accesibilidad (2.7): el tipo de clic de la permanencia (el interruptor NO: clicaría donde se pare el ratón)
+Click "DwellRightRadio"; $dwellRight = Sel 'DwellRightRadio'
+Click "DwellLeftRadio"; $dwellLeft = Sel 'DwellLeftRadio'
+foreach ($i in 1..5) { [R]::mouse_event(0x800, 0, 0, [uint32]4294967176, [UIntPtr]::Zero); Start-Sleep -Milliseconds 40 }
+Start-Sleep -Milliseconds 400
 # Estadísticas (2.6): Hoy / Total
 Click "StatsTodayRadio"; $today = Sel 'StatsTodayRadio'
 Click "StatsTotalRadio"; $total = Sel 'StatsTotalRadio'
@@ -80,6 +85,7 @@ Start-Sleep -Milliseconds 400
 Click "ExperimentalSwitch"; $exp = Tog 'ExperimentalSwitch'
 "3) Ajustes: abierto=$(Tog 'SettingsButton') Mantener=$hold experimentales (tras bajar con la rueda)=$exp (esperado On, True, On)"
 "3a) Estadísticas con clics reales: Hoy=$today Total=$total (esperado True, True)"
+"3b) Accesibilidad con clics reales: Derecho=$dwellRight Izquierdo=$dwellLeft (esperado True, True)"
 
 # Anti-AFK (aparece al activar las experimentales)
 Click "NavAntiAfkButton"

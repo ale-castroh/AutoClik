@@ -101,6 +101,8 @@ public partial class MainWindow : Window
         InitWatch();
         InitSchedule();
         InitHud();
+        InitDwell();
+        InitUpdates();
     }
 
     private IEnumerable<TextBox> NumberBoxes() =>
@@ -223,6 +225,7 @@ public partial class MainWindow : Window
         if (!_watchHotkeys.TrySet(watchKey)) _hotkeyError ??= Strings.F("HotkeyTakenPick", watchKey);
 
         RebuildMacroHotkeys();
+        RebuildDwellHotkey();
 
         _tray = new TrayIcon(_hwnd);
         _tray.LeftClick += ToggleWindowFromTray;
@@ -257,6 +260,8 @@ public partial class MainWindow : Window
         _markers.Changed -= UpdatePointsSummary;
         _markers.Clear();
         DisposeMacros();
+        DisposeDwell();
+        _updateTimer?.Stop();
         CloseHud();
         _hotkeys?.Dispose();
         _recordHotkeys?.Dispose();
@@ -294,7 +299,7 @@ public partial class MainWindow : Window
 
         if (_hotkeys?.HandleMessage(msg, wParam) == true || _recordHotkeys?.HandleMessage(msg, wParam) == true
             || _playHotkeys?.HandleMessage(msg, wParam) == true || _watchHotkeys?.HandleMessage(msg, wParam) == true
-            || HandleMacroHotkeyMessage(msg, wParam)
+            || HandleMacroHotkeyMessage(msg, wParam) || HandleDwellHotkeyMessage(msg, wParam)
             || _tray?.HandleMessage(msg, lParam) == true)
         {
             handled = true;
@@ -414,6 +419,7 @@ public partial class MainWindow : Window
         startItem.Header = Strings.T(running ? "TrayStop" : "TrayStart");
         startItem.Icon = running ? "" : "";
 
+        UpdateDwellTray();
         menu.Placement = PlacementMode.MousePoint;
         menu.IsOpen = true;
         // Sin esto el menú no se cierra al hacer clic fuera.
@@ -435,7 +441,7 @@ public partial class MainWindow : Window
     private void StartButton_Checked(object sender, RoutedEventArgs e)
     {
         if (_capturingHotkey) EndHotkeyCapture(null);
-        OnManualClickStart();
+        if (!_dwellRunning) OnManualClickStart(); // la permanencia no cancela lo programado
         _notice = null;
 
         if (_recording)
@@ -451,14 +457,14 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (PointsPositionRadio.IsChecked == true && _markers.Count == 0 && SelectedAction != ClickAction.Key)
+        if (!_dwellRunning && PointsPositionRadio.IsChecked == true && _markers.Count == 0 && SelectedAction != ClickAction.Key)
         {
             _notice = Strings.T("NeedPoint");
             Dispatcher.InvokeAsync(() => StartButton.IsChecked = false);
             return;
         }
 
-        ClickSettings settings = ReadSettings();
+        ClickSettings settings = _dwellRunSettings ?? ReadSettings();
         _markers.ClickThrough = settings.Points != null;
         _runStarted = Stopwatch.GetTimestamp();
         _runDelay = settings.StartDelay;
@@ -487,6 +493,7 @@ public partial class MainWindow : Window
         _markers.ClickThrough = false;
         _lastStop ??= StopReason.Requested;
         OnClicksStopped(_lastStop.Value);
+        OnDwellRunStopped();
         SetOptionsEnabled(true);
         _statusTimer.Stop();
         UpdateStatus();
@@ -643,7 +650,7 @@ public partial class MainWindow : Window
         : IsActionKeyButton(button) ? null : _hotkeys;
 
     private IEnumerable<HotkeyManager> AllHotkeys =>
-        new[] { _hotkeys, _recordHotkeys, _playHotkeys, _watchHotkeys }.Where(h => h != null)!;
+        new[] { _hotkeys, _recordHotkeys, _playHotkeys, _watchHotkeys, _dwellHotkey }.Where(h => h != null)!;
 
     private void BeginHotkeyCapture(ToggleButton button)
     {
