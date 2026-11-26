@@ -167,18 +167,19 @@ public partial class MainWindow
     private void PlayMacro_Checked(object sender, RoutedEventArgs e)
     {
         if (_macroBusy) return;
+        OnManualMacroStart();
         Macro? source = _testMacro ?? _macro;
-        if (source == null || source.Events.Count == 0 || _macroRecording || _recording)
+        if (source == null || (!source.IsChain && source.Events.Count == 0) || _macroRecording || _recording)
         {
             if (source == null) _macroNotice = Strings.T("MacroNoneHint");
             CancelPlay();
             return;
         }
-        // Posiciones relativas a una ventana (2.3): desplazar según dónde esté ahora
-        _playing = ForPlayback(source);
+        // Posiciones relativas a una ventana (2.3) y cadenas (2.5): preparar lo que se va a reproducir
+        _playing = PrepareForPlayback(source, out string? problem);
         if (_playing == null)
         {
-            _macroNotice = Strings.F("MacroWindowMissing", source.WindowTitle is { Length: > 0 } t ? t : source.WindowProcess ?? "");
+            _macroNotice = problem;
             CancelPlay();
             return;
         }
@@ -206,7 +207,9 @@ public partial class MainWindow
         MacroOptionsCard.IsEnabled = true;
         RecordMacroButton.IsEnabled = true;
         _macroNotice ??= Strings.T("Stopped");
+        string playedName = _playing?.Name ?? _macro?.Name ?? "";
         _playing = null;
+        OnMacroStopped(playedName);
         ShowAfterMacro();
         if (_testMacro != null) EndEditorTest();
         UpdateIcons();
@@ -225,6 +228,87 @@ public partial class MainWindow
     /// La macro lista para reproducir: tal cual, o con el ratón desplazado lo que se haya movido su
     /// ventana. Null si sus posiciones son de una ventana que no está abierta.
     /// </summary>
+    /// <summary>
+    /// Lo que se va a reproducir: la macro (desplazada si es relativa a una ventana) o, si es una cadena,
+    /// todas sus macros seguidas en una sola. Null si falta algo; <paramref name="problem"/> dice qué.
+    /// </summary>
+    private Macro? PrepareForPlayback(Macro macro, out string? problem)
+    {
+        problem = null;
+        if (!macro.IsChain)
+        {
+            Macro? ready = ForPlayback(macro);
+            if (ready == null) problem = WindowMissingText(macro);
+            return ready;
+        }
+
+        var events = new List<MacroEvent>();
+        long t = 0;
+        foreach (ChainItem item in macro.Chain!)
+        {
+            Macro? part = _macros.FirstOrDefault(m => !m.IsChain && m.Name == item.Macro);
+            if (part == null) { problem = Strings.F("ChainMissing", item.Macro); return null; }
+            Macro? ready = ForPlayback(part);
+            if (ready == null) { problem = WindowMissingText(part); return null; }
+            for (int k = 0; k < Math.Max(1, item.Times); k++)
+            {
+                foreach (MacroEvent e in ready.Events) events.Add(e with { Micros = t + e.Micros });
+                t += ready.DurationMicros + 1_000; // 1 ms entre una y otra: mantiene el orden
+            }
+            t += item.PauseMicros;
+        }
+        // La pausa tras la última macro también cuenta (entre vueltas): una marca que no hace nada
+        if (events.Count > 0 && t > events[events.Count - 1].Micros)
+            events.Add(new MacroEvent(t, MacroEventKind.Mark, 0, 0, 0, 0));
+        if (events.Count == 0) { problem = Strings.T("ChainEmpty"); return null; }
+        return new Macro { Name = macro.Name, Events = events };
+    }
+
+    private static string WindowMissingText(Macro macro) =>
+        Strings.F("MacroWindowMissing", macro.WindowTitle is { Length: > 0 } t ? t : macro.WindowProcess ?? "");
+
+    /// <summary>Duración de una cadena (para mostrarla), con las macros que existan.</summary>
+    private long ChainDuration(Macro chain) =>
+        chain.Chain!.Sum(item =>
+            (_macros.FirstOrDefault(m => !m.IsChain && m.Name == item.Macro)?.DurationMicros ?? 0) * Math.Max(1, item.Times)
+            + item.PauseMicros);
+
+    // ================= Cadenas (2.5) =================
+
+    private List<string> PlainMacroNames => _macros.Where(m => !m.IsChain).Select(m => m.Name).ToList();
+
+    private void NewChain()
+    {
+        if (PlainMacroNames.Count == 0) { _macroNotice = Strings.T("ChainNoMacros"); UpdateMacroUi(); return; }
+        string suggested = MacroStore.UniqueName(_macros, Strings.F("ChainDefaultName", _macros.Count(m => m.IsChain) + 1));
+        var result = ChainDialog.Ask(this, Strings.T("ChainTitleNew"), suggested, [], PlainMacroNames, n => ValidateMacroName(n, null));
+        if (result is not { } r) return;
+        var chain = new Macro { Name = r.Name, Chain = r.Items };
+        _macroStore.Save(chain);
+        _macros.Add(chain);
+        _macros = _macros.OrderBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        SelectMacro(chain);
+        _macroNotice = Strings.T("MacroSaved");
+        UpdateMacroUi();
+    }
+
+    private void EditChain(Macro chain)
+    {
+        var result = ChainDialog.Ask(this, Strings.T("ChainTitleEdit"), chain.Name, chain.Chain!, PlainMacroNames,
+                                     n => ValidateMacroName(n, chain));
+        if (result is not { } r) return;
+        chain.Chain = r.Items;
+        if (r.Name != chain.Name && _macroStore.Rename(chain, r.Name))
+        {
+            _macros = _macros.OrderBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+            RebuildMacroHotkeys();
+            ScheduleSave();
+        }
+        _macroStore.Save(chain);
+        _macroNotice = Strings.T("MacroSaved");
+        UpdateMacroUi();
+    }
+
     private static Macro? ForPlayback(Macro macro)
     {
         if (macro.WindowProcess is not { } process) return macro;
@@ -243,6 +327,7 @@ public partial class MainWindow
     private void EditMacro()
     {
         if (_macro is not { } macro || _editor != null || MacroActive) return;
+        if (macro.IsChain) { EditChain(macro); return; }
         _macroNotice = null;
         var editor = new MacroEditor(macro) { Owner = this };
         editor.TestRequested += test =>
@@ -287,6 +372,7 @@ public partial class MainWindow
         if (_player.LastError is { } error) ErrorLog.Write("macro", error);
         if (PlayMacroButton.IsChecked != true) return;
         _macroNotice = Strings.T(_player.LastError != null ? "ClickError" : completed ? "Completed" : "Stopped");
+        _macroCompleted = completed && _player.LastError == null;
         PlayMacroButton.IsChecked = false; // -> PlayMacro_Unchecked
     }
 
@@ -360,7 +446,7 @@ public partial class MainWindow
             var item = new MenuItem
             {
                 Header = macro.Name,
-                Icon = macro == _macro ? "" : null,
+                Icon = macro != _macro && macro.IsChain ? "\uE71B" : macro == _macro ? "" : null,
                 InputGestureText = macro.Hotkey?.ToString() ?? "",
             };
             item.Click += (_, _) => { SelectMacro(macro); UpdateMacroUi(); };
@@ -374,6 +460,7 @@ public partial class MainWindow
         menu.Items.Add(MacroAction("MacroRename", "", RenameMacro, has));
         menu.Items.Add(MacroAction("MacroDuplicate", "", DuplicateMacro, has));
         menu.Items.Add(MacroAction("MacroExport", "", ExportMacro, has));
+        menu.Items.Add(MacroAction("MacroNewChain", "\uE71B", NewChain, true));
         menu.Items.Add(MacroAction("MacroImport", "", ImportMacro, true));
         menu.Items.Add(MacroAction("MacroDelete", "", DeleteMacro, has));
         menu.IsOpen = true;
@@ -402,8 +489,15 @@ public partial class MainWindow
         if (_macro is not { } macro) return;
         string? name = NameDialog.AskName(this, Strings.T("MacroRenameTitle"), macro.Name, n => ValidateMacroName(n, macro));
         if (name == null || name == macro.Name) return;
+        string oldName = macro.Name;
         if (_macroStore.Rename(macro, name))
         {
+            // Las cadenas que la usaban siguen apuntando a ella
+            foreach (var chain in _macros.Where(m => m.Chain?.Any(c => c.Macro == oldName) == true).ToList())
+            {
+                chain.Chain = chain.Chain!.Select(c => c.Macro == oldName ? c with { Macro = name } : c).ToList();
+                _macroStore.Save(chain);
+            }
             _macros = _macros.OrderBy(m => m.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
             RebuildMacroHotkeys();
             ScheduleSave();
@@ -486,6 +580,7 @@ public partial class MainWindow
 
     private void UpdateMacroUi()
     {
+        UpdateScheduleButtons();
         MacroNameText.Text = _macro?.Name ?? Strings.T("MacroNone");
         PlayMacroButton.IsEnabled = _macro != null || PlayMacroButton.IsChecked == true;
 
@@ -494,9 +589,10 @@ public partial class MainWindow
             long duration = Math.Max(1, playing.DurationMicros);
             long position = Math.Min(_player.PositionMicros, duration);
             MacroOptions loopInfo = ReadLoopInfo();
-            MacroStatusText.Text = loopInfo.Total > 0
+            string playingText = loopInfo.Total > 0
                 ? Strings.F("MacroPlayingLoopOf", _player.Loop, loopInfo.Total)
                 : Strings.F("MacroPlayingLoop", _player.Loop);
+            MacroStatusText.Text = MacroScheduleStatus(playingText) ?? playingText;
             MacroTimeText.Text = Clock(position);
             MacroDetailText.Text = Strings.F("MacroOfTotal", Clock(duration));
             MacroProgress.Visibility = Visibility.Visible;
@@ -517,7 +613,13 @@ public partial class MainWindow
             MacroDetailText.Text = Strings.T("MacroEmptyHint");
             return;
         }
-        MacroStatusText.Text = _macroNotice ?? Strings.T("MacroReady");
+        MacroStatusText.Text = MacroScheduleStatus("") ?? _macroNotice ?? Strings.T("MacroReady");
+        if (_macro.IsChain)
+        {
+            MacroTimeText.Text = Clock(ChainDuration(_macro));
+            MacroDetailText.Text = Strings.F("ChainCounts", _macro.Chain!.Count);
+            return;
+        }
         MacroTimeText.Text = Clock(_macro.DurationMicros);
         MacroDetailText.Text = Strings.F("MacroCounts",
             _macro.Clicks, Strings.Clicks(_macro.Clicks), _macro.Keys, Strings.Keys(_macro.Keys), _macro.Moves);

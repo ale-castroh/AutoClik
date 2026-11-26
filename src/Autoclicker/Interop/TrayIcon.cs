@@ -71,6 +71,25 @@ internal sealed unsafe class TrayIcon : IDisposable
         Shell_NotifyIconW(message, &data);
     }
 
+    /// <summary>Notificación de Windows desde el icono de la bandeja (2.5: "al terminar: avisar").</summary>
+    public void ShowBalloon(string title, string text)
+    {
+        if (!_added) return;
+        var data = new NOTIFYICONDATAW
+        {
+            cbSize = (uint)sizeof(NOTIFYICONDATAW),
+            hWnd = _hwnd,
+            uID = 1,
+            uFlags = NIF_INFO,
+            dwInfoFlags = NIIF_INFO,
+        };
+        for (int i = 0; i < Math.Min(title.Length, 63); i++) data.szInfoTitle[i] = title[i];
+        for (int i = 0; i < Math.Min(text.Length, 255); i++) data.szInfo[i] = text[i];
+        Shell_NotifyIconW(NIM_MODIFY, &data);
+    }
+
+    private const uint NIF_INFO = 0x10, NIIF_INFO = 0x1;
+
     public void Dispose()
     {
         if (_added)

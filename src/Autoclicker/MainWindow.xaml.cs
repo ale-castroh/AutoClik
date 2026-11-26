@@ -97,6 +97,7 @@ public partial class MainWindow : Window
         InitPersistence();
         InitMacros();
         InitWatch();
+        InitSchedule();
         InitHud();
     }
 
@@ -431,6 +432,7 @@ public partial class MainWindow : Window
     private void StartButton_Checked(object sender, RoutedEventArgs e)
     {
         if (_capturingHotkey) EndHotkeyCapture(null);
+        OnManualClickStart();
         _notice = null;
 
         if (_recording)
@@ -474,6 +476,7 @@ public partial class MainWindow : Window
         EmergencyCornerWatcher.Stop();
         _markers.ClickThrough = false;
         _lastStop ??= StopReason.Requested;
+        OnClicksStopped(_lastStop.Value);
         SetOptionsEnabled(true);
         _statusTimer.Stop();
         UpdateStatus();
@@ -567,7 +570,7 @@ public partial class MainWindow : Window
         RateText.Text = running ? Strings.F("RateRunning", Strings.Clicks(count), rate) : Strings.Clicks(count);
 
         double waitLeft = (_runDelay - Compat.Elapsed(_runStarted, now)).TotalSeconds;
-        StatusText.Text = running
+        string status = running
             ? waitLeft > 0 ? Strings.F("StartsIn", waitLeft)
               : _engine.IsWaitingForWindow ? Strings.T("WaitingWindow")
               : _engine.IsPaused ? Strings.T("PausedWindow")
@@ -578,6 +581,8 @@ public partial class MainWindow : Window
                 StopReason.Error => "ClickError",
                 _ => "Stopped",
             });
+        StatusText.Text = ClickScheduleStatus(status) ?? status;
+        UpdateScheduleButtons();
 
         // La tecla va dentro del botón; debajo solo se explica el modo "Mantener".
         string key = _hotkeys?.Current.ToString() ?? "F6";

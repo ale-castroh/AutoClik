@@ -102,6 +102,27 @@ real hasta el siguiente y, si se mantuvo ≥ 300 ms, tipo "mantener" con esa dur
 Archivos: `Input/ClickRecorder.cs`, `Views/RecordingBar.xaml`. `--record-injected` solo para pruebas.
 Probado: 3 clics grabados (izq., der., mantener 455 ms) → 2 vueltas a ×2 = 6/6 en orden; se guarda en el perfil.
 
+## Versión 2.5.0 — Programar y cadenas de macros ✅
+- **Programar** (`Scheduling/Schedule.cs`, `Views/ScheduleDialog`, `MainWindow.Schedule.cs`): botón de reloj
+  junto a Iniciar (Clics, sin añadir filas: Clics sigue sin scroll) y junto a Reproducir (Macros).
+  - Empezar ahora, a una hora (ya pasada = mañana) o dentro de X minutos. Al terminar *solos* (nº de clics,
+    tiempo, vueltas de la macro): nada, avisar (globo de la bandeja + sonido), suspender o apagar el PC.
+  - Suspender/apagar: `Views/PowerCountdown`, cuenta atrás de 60 s siempre delante, Cancelar es el botón por
+    defecto. Si la paras tú, no se hace nada al final.
+  - El reloj se pone en color de acento con algo programado; pulsarlo cancela. Empezar a mano (botón, atajo,
+    Vigilar) cancela lo programado de esa sección. Solo en memoria: cerrar AutoClik lo pierde.
+  - Pruebas: `--schedule-seconds`, `--power-test` (solo anota en power-test.txt, nunca apaga) y
+    `--countdown-seconds=N`.
+- **Cadenas de macros** (menú → "Nueva cadena…", `Views/ChainDialog`): una macro cuyo archivo lleva `Chain`
+  (macro, veces, pausa después) en vez de eventos. Al reproducir se juntan todas en una sola macro (con sus
+  posiciones relativas ya aplicadas y un evento `Mark` para la pausa final), así funcionan velocidad, vueltas,
+  mini ventana, F8, atajo propio, Programar y Vigilar sin cambios en el reproductor. Renombrar una macro
+  actualiza las cadenas que la usan; si falta una, avisa ("Falta la macro…").
+- Pruebas: nueva `tests/ui/programar.ps1` (empieza sola a su hora, apaga de mentira tras la cuenta atrás,
+  cancelar con el reloj, Cancelar en la cuenta atrás, cadena A×2 → pausa → B, nueva cadena desde el menú, macro
+  programada "ahora" + avisar); `clics-reales.ps1` abre y cancela Programar con el ratón de verdad.
+- Detalle visual: la etiqueta de la tecla (F6, F7, F8, F10) de los botones principales queda centrada por dentro y a la altura del texto (medido al píxel).
+
 ## Versión 2.4.0 — Vigilar la pantalla ✅
 - **Vigilar** (experimental: sección nueva en la barra lateral, solo con Ajustes → Experimental; atajo F10,
   configurable en Ajustes → Atajo). Reglas "cuando aparezca esto, haz aquello", guardadas en el perfil:

@@ -36,6 +36,21 @@ public partial class App : Application
             {
                 Input.AntiAfk.TestIntervalSeconds = seconds;
             }
+            // Solo pruebas automáticas (2.5): "Dentro de" en segundos, apagar/suspender de mentira y
+            // cuenta atrás más corta.
+            else if (arg.Equals("--schedule-seconds", StringComparison.OrdinalIgnoreCase))
+            {
+                Scheduling.Schedule.TestSeconds = true;
+            }
+            else if (arg.Equals("--power-test", StringComparison.OrdinalIgnoreCase))
+            {
+                Scheduling.Power.TestMode = true;
+            }
+            else if (arg.StartsWith("--countdown-seconds=", StringComparison.OrdinalIgnoreCase)
+                     && int.TryParse(arg.Substring("--countdown-seconds=".Length), out int countdown))
+            {
+                Scheduling.Power.CountdownSeconds = Math.Max(1, countdown);
+            }
             // --data=<carpeta> guarda la configuración en otra carpeta (pruebas).
             else if (arg.StartsWith("--data=", StringComparison.OrdinalIgnoreCase))
             {

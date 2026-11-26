@@ -51,6 +51,14 @@ Click "CursorPositionRadio"; Click "SingleKindRadio"; Click "RepeatForeverRadio"
 Click "StartButton"; $on = Tog 'StartButton'
 Click "StartButton"; $off = Tog 'StartButton'
 "2) Iniciar=$on Detener=$off (esperado On / Off)"
+# Programar (2.5): el reloj abre su ventana y Cancelar la cierra, con clics reales
+Click "ClickScheduleButton"; Start-Sleep -Milliseconds 400
+$schedCancel = $AE::RootElement.FindFirst($TS::Descendants, (New-Object Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "HourBox")))
+$cancelBtn = $AE::RootElement.FindFirst($TS::Descendants, (New-Object Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "CancelButton")))
+if ($cancelBtn) { ClickEl $cancelBtn "Cancelar programar" }
+Start-Sleep -Milliseconds 300
+$stillThere = $null -ne $AE::RootElement.FindFirst($TS::Descendants, (New-Object Windows.Automation.PropertyCondition($AE::AutomationIdProperty, "HourBox")))
+"2a) Programar: ventana abierta=$($null -ne $schedCancel) cerrada con Cancelar=$(-not $stillThere) (esperado True, True)"
 
 # Macros: sus opciones también deben responder al ratón
 Click "NavMacrosButton"

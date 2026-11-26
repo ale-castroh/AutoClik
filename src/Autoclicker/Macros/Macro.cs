@@ -9,7 +9,11 @@ namespace Autoclicker.Macros;
 /// WaitColor (2.4): espera a que el punto X, Y tenga el color Data (0xRRGGBB); Flags = tolerancia
 /// (0-100) + segundos máximos × 256.
 /// </summary>
-public enum MacroEventKind { Move, Down, Up, Wheel, HWheel, KeyDown, KeyUp, TypeChar, WaitColor }
+// Mark (2.5): no hace nada; solo marca un instante (la pausa final de una cadena). Nunca se guarda.
+public enum MacroEventKind { Move, Down, Up, Wheel, HWheel, KeyDown, KeyUp, TypeChar, WaitColor, Mark }
+
+/// <summary>Un elemento de una cadena (2.5): una macro, cuántas veces y la pausa después.</summary>
+public sealed record ChainItem(string Macro, int Times, long PauseMicros);
 
 public enum MacroButton { Left, Right, Middle, X1, X2 }
 
@@ -49,6 +53,11 @@ public sealed class Macro
     /// lo que se haya movido la ventana. Null = posiciones de pantalla.
     /// </summary>
     public string? WindowProcess { get; set; }
+
+    /// <summary>Cadena (2.5): lista de macros que se reproducen seguidas. Null = macro normal.</summary>
+    public List<ChainItem>? Chain { get; set; }
+
+    public bool IsChain => Chain != null;
     public string? WindowTitle { get; set; }
     public int WindowX { get; set; }
     public int WindowY { get; set; }
@@ -66,6 +75,7 @@ public sealed class Macro
     {
         Name = name, Created = DateTime.Now, Events = [.. Events],
         WindowProcess = WindowProcess, WindowTitle = WindowTitle, WindowX = WindowX, WindowY = WindowY,
+        Chain = Chain?.ToList(),
     };
 
     /// <summary>Copia con las posiciones del ratón desplazadas (para posiciones relativas a una ventana).</summary>
@@ -99,6 +109,12 @@ public sealed class Macro
         ["WindowX"] = WindowX,
         ["WindowY"] = WindowY,
         ["Events"] = EncodeEvents(Events),
+        ["Chain"] = Chain?.Select(c => (object?)new Dictionary<string, object?>
+        {
+            ["Macro"] = c.Macro,
+            ["Times"] = c.Times,
+            ["PauseMs"] = c.PauseMicros / 1000,
+        }).ToList(),
     });
 
     internal static Macro FromJson(string text)
@@ -116,6 +132,10 @@ public sealed class Macro
             WindowTitle = j.Str("WindowTitle"),
             WindowX = j.Int("WindowX", 0),
             WindowY = j.Int("WindowY", 0),
+            Chain = j.Has("Chain")
+                ? j.Array("Chain").Select(c => new ChainItem(c.Str("Macro") ?? "", Math.Max(1, c.Int("Times", 1)), Math.Max(0, c.Long("PauseMs", 0)) * 1000))
+                    .Where(c => c.Macro.Length > 0).ToList()
+                : null,
         };
     }
 

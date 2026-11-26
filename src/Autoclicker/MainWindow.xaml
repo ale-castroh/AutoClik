@@ -162,9 +162,21 @@
                                FontSize="52" LineStackingStrategy="BlockLineHeight" LineHeight="48" />
                     <TextBlock x:Name="RateText" Text="" Style="{StaticResource CaptionStyle}" />
 
-                    <ToggleButton x:Name="StartButton" Margin="0,16,0,0" Style="{StaticResource PrimaryToggleStyle}"
-                                  Content="{l:T StartBtn}" t:Ui.CheckedText="{l:T StopBtn}" t:Ui.KeyText="F6"
-                                  Checked="StartButton_Checked" Unchecked="StartButton_Unchecked" />
+                    <Grid Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ToggleButton x:Name="StartButton" Style="{StaticResource PrimaryToggleStyle}"
+                                      Content="{l:T StartBtn}" t:Ui.CheckedText="{l:T StopBtn}" t:Ui.KeyText="F6"
+                                      Checked="StartButton_Checked" Unchecked="StartButton_Unchecked" />
+                        <!-- Programar (2.5): empezar más tarde y qué hacer al terminar -->
+                        <Button x:Name="ClickScheduleButton" Grid.Column="2" Content="&#xE917;" Tag="False"
+                                Width="{Binding ActualHeight, ElementName=StartButton}"
+                                Style="{StaticResource SideActionButtonStyle}" ToolTip="{l:T ScheduleTip}"
+                                AutomationProperties.Name="{l:T ScheduleTip}" Click="ClickSchedule_Click" />
+                    </Grid>
                     <!-- Solo en modo "Mantener" (p. ej. "Mantén F6 para clicar") -->
                     <TextBlock x:Name="HotkeyHintText" Text="" Margin="0,8,0,0" HorizontalAlignment="Center"
                                Style="{StaticResource CaptionStyle}" />
@@ -415,7 +427,13 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="8" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
+                        <Button x:Name="MacroScheduleButton" Grid.Column="4" Content="&#xE917;" Tag="False"
+                                Width="{Binding ActualHeight, ElementName=PlayMacroButton}"
+                                Style="{StaticResource SideActionButtonStyle}" ToolTip="{l:T ScheduleTip}"
+                                AutomationProperties.Name="{l:T ScheduleTip}" Click="MacroSchedule_Click" />
                         <ToggleButton x:Name="RecordMacroButton" Grid.Column="0" Style="{StaticResource RecordToggleStyle}"
                                       Content="{l:T MacroRecord}" t:Ui.CheckedText="{l:T Finish}" t:Ui.KeyText="F7"
                                       ToolTip="{l:T MacroRecordTip}"
